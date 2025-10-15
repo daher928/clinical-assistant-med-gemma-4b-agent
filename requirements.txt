@@ -15,6 +15,7 @@ plotly>=5.17.0
 
 # Gemini API for speech-to-text
 google-generativeai>=0.3.0
+python-dotenv>=1.0.0
 
 # Optional: For LangGraph integration (future enhancement)
 # langgraph>=0.0.26
