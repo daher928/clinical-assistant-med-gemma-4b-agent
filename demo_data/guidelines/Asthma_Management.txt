@@ -1,0 +1,62 @@
+Asthma Management Guidelines
+
+GINA (Global Initiative for Asthma) Summary
+
+Severity Classification:
+- Intermittent: Symptoms <2 days/week
+- Mild Persistent: Symptoms >2 days/week but not daily
+- Moderate Persistent: Daily symptoms
+- Severe Persistent: Continual symptoms, frequent exacerbations
+
+Step-wise Treatment Approach:
+
+Step 1 (Mild Intermittent):
+- As-needed short-acting beta-agonist (SABA)
+- Consider low-dose ICS-formoterol as needed
+
+Step 2 (Mild Persistent):
+- Daily low-dose inhaled corticosteroid (ICS)
+- As-needed SABA
+
+Step 3 (Moderate):
+- Low-dose ICS + long-acting beta-agonist (LABA)
+- OR medium-dose ICS alone
+
+Step 4 (Moderate to Severe):
+- Medium-dose ICS + LABA
+- Consider adding leukotriene modifier (montelukast)
+
+Step 5 (Severe):
+- High-dose ICS + LABA
+- Consider add-on therapy: tiotropium, biologics
+- Refer to specialist
+
+Monitoring:
+- Assess control at each visit
+- Peak flow monitoring
+- Spirometry annually or as needed
+- Medication technique review
+
+Trigger Avoidance:
+- Identify and avoid allergens
+- Avoid NSAIDs in aspirin-sensitive asthma
+- Smoking cessation
+
+Exacerbation Management:
+- Systemic corticosteroids
+- Frequent SABA
+- Consider oxygen if hypoxemic
+- Hospital admission if severe
+
+Action Plan:
+- Written asthma action plan for all patients
+- When to increase medications
+- When to seek emergency care
+
+Special Considerations:
+- Aspirin-sensitive asthma: Avoid NSAIDs
+- Exercise-induced: Pre-treat with SABA
+- Pregnancy: Continue ICS, consider step-down after delivery
+
+References: GINA 2024, NAEPP 2023
+

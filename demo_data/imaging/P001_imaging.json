@@ -1,0 +1,20 @@
+{
+  "patient_id": "P001",
+  "studies": [
+    {
+      "type": "Renal Ultrasound",
+      "date": "2025-09-15",
+      "findings": "Both kidneys show reduced size (right kidney 9.2 cm, left kidney 9.5 cm). Increased cortical echogenicity bilaterally consistent with chronic kidney disease. No hydronephrosis or masses identified.",
+      "impression": "Bilateral chronic kidney disease",
+      "radiologist": "Dr. Chen"
+    },
+    {
+      "type": "Chest X-Ray",
+      "date": "2025-09-28",
+      "findings": "Mild cardiomegaly. No acute pulmonary infiltrates. Small bilateral pleural effusions.",
+      "impression": "Mild cardiomegaly with small pleural effusions, likely related to volume overload",
+      "radiologist": "Dr. Lee"
+    }
+  ]
+}
+

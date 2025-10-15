@@ -270,10 +270,6 @@ source medgemma_env/bin/activate
 pip install --upgrade transformers
 ```
 
-**Out of Memory**: Reduce generation length
-```bash
-export MAX_NEW_TOKENS=300
-```
 
 ## 🛠️ Development
 
