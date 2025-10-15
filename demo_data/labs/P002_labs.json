@@ -1,0 +1,39 @@
+{
+  "patient_id": "P002",
+  "results": [
+    {
+      "test": "Complete Blood Count",
+      "value": "Normal",
+      "unit": "",
+      "reference_range": "Normal",
+      "status": "NORMAL",
+      "date": "2025-10-05"
+    },
+    {
+      "test": "Comprehensive Metabolic Panel",
+      "value": "Normal",
+      "unit": "",
+      "reference_range": "Normal",
+      "status": "NORMAL",
+      "date": "2025-10-05"
+    },
+    {
+      "test": "TSH",
+      "value": 2.1,
+      "unit": "mIU/L",
+      "reference_range": "0.4-4.0",
+      "status": "NORMAL",
+      "date": "2025-10-05"
+    },
+    {
+      "test": "Vitamin D",
+      "value": 18,
+      "unit": "ng/mL",
+      "reference_range": "30-100",
+      "status": "LOW",
+      "date": "2025-10-05",
+      "trend": "stable"
+    }
+  ]
+}
+
