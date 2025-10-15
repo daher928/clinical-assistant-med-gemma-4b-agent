@@ -1,0 +1,56 @@
+{
+  "patient_id": "P002",
+  "demographics": {
+    "name": "Jane Smith",
+    "age": 45,
+    "gender": "Female",
+    "dob": "1978-08-22"
+  },
+  "conditions": [
+    {
+      "name": "Asthma",
+      "icd10": "J45.909",
+      "onset": "1990-05-15",
+      "status": "active"
+    },
+    {
+      "name": "Migraine without aura",
+      "icd10": "G43.909",
+      "onset": "2010-03-20",
+      "status": "active"
+    },
+    {
+      "name": "Anxiety disorder",
+      "icd10": "F41.9",
+      "onset": "2015-11-10",
+      "status": "active"
+    }
+  ],
+  "allergies": [
+    {
+      "allergen": "Aspirin",
+      "reaction": "Bronchospasm",
+      "severity": "severe"
+    },
+    {
+      "allergen": "Sulfa drugs",
+      "reaction": "Rash",
+      "severity": "moderate"
+    }
+  ],
+  "vitals": {
+    "last_visit": "2025-10-05",
+    "bp": "118/76 mmHg",
+    "hr": "82 bpm",
+    "temp": "98.6°F",
+    "weight": "145 lbs",
+    "height": "5'5\"",
+    "bmi": 24.1
+  },
+  "social_history": {
+    "smoking": "Never",
+    "alcohol": "None",
+    "exercise": "Moderate (3x/week)"
+  }
+}
+

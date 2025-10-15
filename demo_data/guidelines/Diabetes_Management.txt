@@ -1,0 +1,42 @@
+Type 2 Diabetes Mellitus Management Guidelines
+
+ADA Standards of Medical Care Summary
+
+Glycemic Targets:
+- HbA1c: <7% for most adults, <6.5% if achievable without hypoglycemia
+- Individualize based on patient factors
+
+First-Line Therapy:
+1. Lifestyle modifications (diet, exercise, weight loss)
+2. Metformin (if eGFR >30)
+
+Add-On Therapy Considerations:
+- ASCVD or high CV risk: GLP-1 RA or SGLT2i with proven CV benefit
+- Heart failure: SGLT2i with HF benefit
+- CKD: SGLT2i or GLP-1 RA with kidney benefit
+
+Monitoring:
+- HbA1c: every 3 months if not at goal, every 6 months if stable
+- Annual comprehensive foot exam
+- Annual dilated eye exam
+- Annual urine albumin-to-creatinine ratio
+- Annual lipid panel
+- Blood pressure at every visit
+
+Cardiovascular Risk Management:
+- Statin therapy for most patients >40 years
+- BP target <130/80 mmHg
+- Aspirin for secondary prevention
+
+Kidney Protection:
+- ACE inhibitor or ARB for albuminuria
+- SGLT2 inhibitor for CKD protection
+- Avoid metformin if eGFR <30
+
+Hypoglycemia Prevention:
+- Regular monitoring
+- Patient education
+- Medication adjustment as needed
+
+References: ADA 2025, AACE 2024
+
