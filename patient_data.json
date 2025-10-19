@@ -1,0 +1,44 @@
+{
+  "patient_id": "P001",
+  "demographics": {
+    "age": 68,
+    "gender": "Male"
+  },
+  "conditions": [
+    "Osteoarthritis",
+    "Chronic Heart Failure (Class II)",
+    "Chronic Kidney Disease (Stage 3b)",
+    "Hypertension"
+  ],
+  "allergies": [
+    "Penicillin",
+    "Sulfa drugs"
+  ],
+  "medications": [
+    "Lisinopril 10mg once daily (ACE inhibitor)",
+    "Furosemide 40mg once daily",
+    "Metoprolol 25mg twice daily"
+  ],
+  "labs": {
+    "eGFR": 35,
+    "Creatinine": 2.1,
+    "BUN": 28,
+    "BNP": 450,
+    "Sodium": 138,
+    "Potassium": 4.2
+  },
+  "vital_signs": {
+    "blood_pressure": "135/85",
+    "heart_rate": 78,
+    "temperature": 98.4,
+    "weight": 185,
+    "oxygen_saturation": 96
+  },
+  "visit_reason": "Joint pain - osteoarthritis",
+  "current_symptoms": [
+    "Knee joint pain (bilateral)",
+    "Morning stiffness",
+    "Reduced mobility",
+    "Pain worsens with activity"
+  ]
+}

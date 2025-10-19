@@ -1,0 +1,207 @@
+{
+  "patients": [
+    {
+      "patient_id": "P001",
+      "name": "John Smith",
+      "demographics": {
+        "age": 68,
+        "gender": "Male"
+      },
+      "conditions": [
+        "Osteoarthritis",
+        "Chronic Heart Failure (Class II)",
+        "Chronic Kidney Disease (Stage 3b)",
+        "Hypertension"
+      ],
+      "allergies": [
+        "Penicillin",
+        "Sulfa drugs"
+      ],
+      "medications": [
+        "Lisinopril 10mg once daily (ACE inhibitor)",
+        "Furosemide 40mg once daily",
+        "Metoprolol 25mg twice daily"
+      ],
+      "labs": {
+        "eGFR": 35,
+        "Creatinine": 2.1,
+        "BUN": 28,
+        "BNP": 450,
+        "Sodium": 138,
+        "Potassium": 4.2
+      },
+      "vital_signs": {
+        "blood_pressure": "135/85",
+        "heart_rate": 78,
+        "temperature": 98.4,
+        "weight": 185,
+        "oxygen_saturation": 96
+      },
+      "visit_reason": "Joint pain - osteoarthritis",
+      "current_symptoms": [
+        "Knee joint pain (bilateral)",
+        "Morning stiffness",
+        "Reduced mobility",
+        "Pain worsens with activity"
+      ]
+    },
+    {
+      "patient_id": "P002",
+      "name": "Sarah Johnson",
+      "demographics": {
+        "age": 45,
+        "gender": "Female"
+      },
+      "conditions": [
+        "Type 2 Diabetes",
+        "Hypertension",
+        "Hyperlipidemia"
+      ],
+      "allergies": [
+        "Latex"
+      ],
+      "medications": [
+        "Metformin 500mg twice daily",
+        "Lisinopril 5mg once daily",
+        "Atorvastatin 20mg once daily"
+      ],
+      "labs": {
+        "eGFR": 85,
+        "HbA1c": 7.2,
+        "Total Cholesterol": 180,
+        "LDL": 110,
+        "HDL": 45
+      },
+      "vital_signs": {
+        "blood_pressure": "140/90",
+        "heart_rate": 75,
+        "temperature": 98.6,
+        "weight": 160
+      },
+      "visit_reason": "Routine diabetes follow-up",
+      "current_symptoms": [
+        "Increased thirst",
+        "Frequent urination",
+        "Fatigue"
+      ]
+    },
+    {
+      "patient_id": "P003",
+      "name": "Michael Brown",
+      "demographics": {
+        "age": 72,
+        "gender": "Male"
+      },
+      "conditions": [
+        "Atrial Fibrillation",
+        "Hypertension",
+        "Osteoporosis"
+      ],
+      "allergies": [
+        "Warfarin",
+        "Aspirin"
+      ],
+      "medications": [
+        "Warfarin 5mg once daily",
+        "Digoxin 0.25mg once daily",
+        "Calcium 600mg twice daily"
+      ],
+      "labs": {
+        "INR": 2.5,
+        "eGFR": 65,
+        "Creatinine": 1.2,
+        "Calcium": 9.8
+      },
+      "vital_signs": {
+        "blood_pressure": "130/80",
+        "heart_rate": 95,
+        "temperature": 98.2,
+        "weight": 170
+      },
+      "visit_reason": "Chest pain evaluation",
+      "current_symptoms": [
+        "Chest discomfort",
+        "Shortness of breath",
+        "Irregular heartbeat"
+      ]
+    },
+    {
+      "patient_id": "P004",
+      "name": "Emily Davis",
+      "demographics": {
+        "age": 35,
+        "gender": "Female"
+      },
+      "conditions": [
+        "Pregnancy (32 weeks)",
+        "Gestational Diabetes",
+        "Anemia"
+      ],
+      "allergies": [
+        "None known"
+      ],
+      "medications": [
+        "Prenatal vitamins",
+        "Iron supplement 65mg once daily",
+        "Folic acid 1mg once daily"
+      ],
+      "labs": {
+        "Hemoglobin": 10.5,
+        "Glucose": 95,
+        "Iron": 45,
+        "Folic Acid": 12.5
+      },
+      "vital_signs": {
+        "blood_pressure": "120/75",
+        "heart_rate": 85,
+        "temperature": 98.8,
+        "weight": 155
+      },
+      "visit_reason": "Prenatal care",
+      "current_symptoms": [
+        "Mild fatigue",
+        "Occasional nausea",
+        "Back pain"
+      ]
+    },
+    {
+      "patient_id": "P005",
+      "name": "Robert Wilson",
+      "demographics": {
+        "age": 55,
+        "gender": "Male"
+      },
+      "conditions": [
+        "COPD",
+        "Smoking History (30 pack-years)",
+        "Depression"
+      ],
+      "allergies": [
+        "Codeine"
+      ],
+      "medications": [
+        "Albuterol inhaler PRN",
+        "Fluticasone inhaler twice daily",
+        "Sertraline 50mg once daily"
+      ],
+      "labs": {
+        "Oxygen Saturation": 92,
+        "FEV1": 65,
+        "CBC": "Normal"
+      },
+      "vital_signs": {
+        "blood_pressure": "125/80",
+        "heart_rate": 88,
+        "temperature": 98.5,
+        "weight": 180,
+        "oxygen_saturation": 92
+      },
+      "visit_reason": "COPD exacerbation",
+      "current_symptoms": [
+        "Increased shortness of breath",
+        "Cough with sputum",
+        "Wheezing"
+      ]
+    }
+  ]
+}

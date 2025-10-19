@@ -7,7 +7,7 @@ error handling and dynamic decision making.
 import json
 import re
 from typing import Callable, Dict, Optional
-from tools import ehr, labs, meds, imaging, ddi, guidelines
+from tools import ehr, labs, meds, imaging, ddi, guidelines, safety_checker
 from llm.med_gemma_wrapper import MedGemmaLLM
 from config import Config
 
@@ -357,6 +357,53 @@ class ClinicalAssistantOrchestrator:
                 progress_callback(msg)
         
         return run_agent_hybrid(patient_id, complaint, emit)
+
+
+def run_safety_monitor(patient_id: str, doctor_decision: Dict, patient_context: Dict, emit: Callable[[str], None]) -> Dict:
+    """
+    Run safety monitor on doctor's treatment decisions.
+    
+    Args:
+        patient_id: Patient identifier
+        doctor_decision: Doctor's treatment plan with prescriptions
+        patient_context: Full patient data from diagnostic workflow
+        emit: Progress callback
+        
+    Returns:
+        Safety analysis results
+    """
+    try:
+        from agent.safety_monitor import SafetyMonitorAgent
+        
+        # Initialize tools for safety monitor
+        tools = {
+            'ehr': ehr.get_ehr,
+            'labs': labs.get_labs,
+            'meds': meds.get_meds,
+            'imaging': imaging.get_imaging,
+            'ddi': ddi.query_ddi,
+            'guidelines': guidelines.search_guidelines,
+            'safety_checker': safety_checker.check_drug_safety
+        }
+        
+        # Initialize LLM
+        llm = MedGemmaLLM()
+        
+        # Initialize safety monitor
+        safety_monitor = SafetyMonitorAgent(tools, llm)
+        
+        # Run safety analysis
+        safety_result = safety_monitor.run(patient_id, doctor_decision, patient_context, emit)
+        
+        return safety_result
+        
+    except Exception as e:
+        emit(f"SAFETY_MONITOR_ERROR: {str(e)}")
+        return {
+            'status': 'error',
+            'warnings': [],
+            'summary': f'Safety monitor failed: {str(e)}'
+        }
 
 
 # Alias for backward compatibility

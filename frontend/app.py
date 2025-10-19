@@ -619,7 +619,7 @@ with col_clear:
             del st.session_state['logs']
         if 'observations' in st.session_state:
             del st.session_state['observations']
-        st.rerun()
+        # Don't use st.rerun() - let Streamlit handle the state naturally
 
 with col_settings:
     mode_display = "Fast Analysis" if Config.USE_MOCK_LLM else "AI-Powered Analysis"
@@ -765,7 +765,8 @@ if run_button:
         # RESULTS DASHBOARD
         # ============================================================================
         
-        if result:
+        # Show results if we have them
+        if result or 'result' in st.session_state:
             st.markdown("")
             st.markdown("<hr style='margin: 2rem 0; border: none; border-top: 2px solid #e5e7eb;'>", unsafe_allow_html=True)
             st.markdown("### 📊 Clinical Decision Support Summary")
@@ -783,11 +784,12 @@ if run_button:
             """, unsafe_allow_html=True)
             
             # Main results in tabs
-            tab1, tab2, tab3, tab4 = st.tabs([
+            tab1, tab2, tab3, tab4, tab5 = st.tabs([
                 "📄 Clinical Summary",
                 "📈 Data Insights",
                 "🔍 Raw Output",
-                "📋 Execution Log"
+                "📋 Execution Log",
+                "🩺 Doctor Decision"
             ])
             
             with tab1:
@@ -796,7 +798,9 @@ if run_button:
                 <div class='results-container'>
                 """, unsafe_allow_html=True)
                 
-                st.markdown(result)
+                # Use result from current run or session state
+                display_result = result if result else st.session_state.get('result', 'No results available')
+                st.markdown(display_result)
                 
                 st.markdown("</div>", unsafe_allow_html=True)
                 
@@ -813,493 +817,578 @@ if run_button:
                     )
                 
                 # ====================================================================
+                # DOCTOR DECISION FORM
+                # ====================================================================
+                
+                st.markdown("")
+                st.markdown("---")
+                st.markdown("#### 🩺 Doctor Decision & Treatment Plan")
+                
+                # Doctor decision form - ALWAYS visible if we have results
+                with st.expander("📝 Enter Treatment Decision", expanded=True):
+                    st.markdown("**Please review the clinical summary above and enter your treatment decisions:**")
+                    
+                    # Ensure session state is properly initialized
+                    if 'prescriptions' not in st.session_state:
+                        st.session_state['prescriptions'] = []
+                    if 'treatment_notes' not in st.session_state:
+                        st.session_state['treatment_notes'] = ""
+                    
+                    # Treatment plan section
+                    st.markdown("##### 💊 Prescriptions & Medications")
+                    
+                    # Add prescription button
+                    col_add, col_info = st.columns([1, 3])
+                    with col_add:
+                        if st.button("➕ Add Prescription", type="secondary", use_container_width=True, key="add_prescription_btn"):
+                            st.session_state['prescriptions'].append({
+                                'name': '',
+                                'dose': '',
+                                'frequency': 'once daily',
+                                'duration': '',
+                                'instructions': ''
+                            })
+                            # Don't use st.rerun() - let Streamlit handle the state naturally
+                    
+                    with col_info:
+                        st.caption(f"📋 {len(st.session_state['prescriptions'])} prescription(s) added")
+                        
+                        # Debug info (remove in production)
+                        if st.checkbox("🔧 Debug Info", key="debug_checkbox"):
+                            st.json({
+                                'prescriptions_count': len(st.session_state['prescriptions']),
+                                'prescriptions': st.session_state['prescriptions'],
+                                'treatment_notes': st.session_state.get('treatment_notes', ''),
+                                'has_doctor_decision': 'doctor_decision' in st.session_state,
+                                'has_safety_result': 'safety_result' in st.session_state
+                            })
+                    
+                    # Display prescriptions
+                    for i, prescription in enumerate(st.session_state['prescriptions']):
+                        with st.container():
+                            st.markdown(f"**Prescription {i+1}**")
+                            
+                            col1, col2, col3 = st.columns([2, 1, 1])
+                            
+                            with col1:
+                                prescription['name'] = st.text_input(
+                                    "Drug Name",
+                                    value=prescription['name'],
+                                    key=f"drug_name_{i}",
+                                    placeholder="e.g., Metformin, Lisinopril"
+                                )
+                            
+                            with col2:
+                                prescription['dose'] = st.text_input(
+                                    "Dose",
+                                    value=prescription['dose'],
+                                    key=f"dose_{i}",
+                                    placeholder="e.g., 500mg, 10mg"
+                                )
+                            
+                            with col3:
+                                prescription['frequency'] = st.selectbox(
+                                    "Frequency",
+                                    options=["once daily", "twice daily", "three times daily", "four times daily", "as needed"],
+                                    index=0 if not prescription['frequency'] else ["once daily", "twice daily", "three times daily", "four times daily", "as needed"].index(prescription['frequency']) if prescription['frequency'] in ["once daily", "twice daily", "three times daily", "four times daily", "as needed"] else 0,
+                                    key=f"frequency_{i}"
+                                )
+                            
+                            col4, col5 = st.columns([1, 1])
+                            
+                            with col4:
+                                prescription['duration'] = st.text_input(
+                                    "Duration",
+                                    value=prescription['duration'],
+                                    key=f"duration_{i}",
+                                    placeholder="e.g., 7 days, 30 days, ongoing"
+                                )
+                            
+                            with col5:
+                                if st.button("🗑️ Remove", key=f"remove_{i}", type="secondary", use_container_width=True):
+                                    if len(st.session_state['prescriptions']) > 0:
+                                        st.session_state['prescriptions'].pop(i)
+                                        # Don't use st.rerun() - let Streamlit handle the state naturally
+                            
+                            prescription['instructions'] = st.text_area(
+                                "Special Instructions",
+                                value=prescription['instructions'],
+                                key=f"instructions_{i}",
+                                placeholder="e.g., Take with food, Monitor blood pressure"
+                            )
+                            
+                            st.markdown("---")
+                    
+                    # Treatment notes
+                    st.markdown("##### 📋 Treatment Plan Notes")
+                    treatment_notes = st.text_area(
+                        "Additional Treatment Notes",
+                        value=st.session_state.get('treatment_notes', ''),
+                        placeholder="Enter any additional treatment decisions, follow-up plans, or clinical notes...",
+                        key="treatment_notes_input"
+                    )
+                    
+                    # Update session state
+                    st.session_state['treatment_notes'] = treatment_notes
+                    
+                    # Submit button
+                    col_submit, col_clear = st.columns([1, 1])
+                    
+                    with col_submit:
+                        submit_decision = st.button("🔍 Run Safety Check", type="primary", use_container_width=True, key="run_safety_check_btn")
+                    
+                    with col_clear:
+                        if st.button("🗑️ Clear Form", use_container_width=True, key="clear_form_btn"):
+                            st.session_state['prescriptions'] = []
+                            st.session_state['treatment_notes'] = ""
+                            st.session_state['doctor_decision'] = None
+                            st.session_state['safety_result'] = None
+                            # Don't use st.rerun() - let Streamlit handle the state naturally
+                
+                # Handle safety check
+                if submit_decision:
+                    if not st.session_state['prescriptions'] or not any(p.get('name') for p in st.session_state['prescriptions']):
+                        st.warning("⚠️ Please add at least one prescription before running safety check.")
+                    else:
+                        # Prepare doctor decision
+                        doctor_decision = {
+                            'prescriptions': [p for p in st.session_state['prescriptions'] if p.get('name')],
+                            'treatment_notes': treatment_notes,
+                            'timestamp': datetime.now().isoformat()
+                        }
+                        
+                        # Store in session state
+                        st.session_state['doctor_decision'] = doctor_decision
+                        
+                        # Run safety monitor
+                        with st.spinner("🔍 Running comprehensive safety analysis..."):
+                            try:
+                                from agent.orchestrator import run_safety_monitor
+                                
+                                # Get patient context from observations
+                                patient_context = st.session_state.get('observations', {})
+                                
+                                # Run safety monitor
+                                safety_result = run_safety_monitor(
+                                    patient_id, 
+                                    doctor_decision, 
+                                    patient_context, 
+                                    lambda msg: st.write(f"Safety Check: {msg}")
+                                )
+                                
+                                # Store safety results
+                                st.session_state['safety_result'] = safety_result
+                                
+                                st.success("✅ Safety analysis completed!")
+                                # Don't use st.rerun() - let Streamlit handle the state naturally
+                                
+                            except Exception as e:
+                                st.error(f"❌ Safety check failed: {str(e)}")
+                
+                # Display safety results if available
+                if 'safety_result' in st.session_state:
+                    st.markdown("")
+                    st.markdown("---")
+                    st.markdown("#### 🛡️ Safety Analysis Results")
+                    
+                    safety_result = st.session_state['safety_result']
+                    
+                    # Safety summary
+                    if safety_result.get('status') == 'completed':
+                        warnings = safety_result.get('warnings', [])
+                        
+                        if not warnings:
+                            st.success("✅ All prescriptions appear safe based on current patient data.")
+                        else:
+                            # Display warnings by severity
+                            critical_warnings = [w for w in warnings if w.severity == 'critical']
+                            high_warnings = [w for w in warnings if w.severity == 'high']
+                            medium_warnings = [w for w in warnings if w.severity == 'medium']
+                            low_warnings = [w for w in warnings if w.severity == 'low']
+                            
+                            # Critical warnings
+                            if critical_warnings:
+                                st.error("🚨 **CRITICAL SAFETY ISSUES**")
+                                for warning in critical_warnings:
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #fee2e2;
+                                        border-left: 4px solid #dc2626;
+                                        padding: 1rem;
+                                        margin: 0.5rem 0;
+                                        border-radius: 8px;
+                                    '>
+                                        <strong style='color: #dc2626;'>{warning.drug_name}</strong><br>
+                                        {warning.message}<br>
+                                        <em style='color: #991b1b;'>{warning.recommendation}</em>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            
+                            # High warnings
+                            if high_warnings:
+                                st.warning("⚠️ **HIGH PRIORITY WARNINGS**")
+                                for warning in high_warnings:
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #fef3c7;
+                                        border-left: 4px solid #d97706;
+                                        padding: 1rem;
+                                        margin: 0.5rem 0;
+                                        border-radius: 8px;
+                                    '>
+                                        <strong style='color: #d97706;'>{warning.drug_name}</strong><br>
+                                        {warning.message}<br>
+                                        <em style='color: #92400e;'>{warning.recommendation}</em>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            
+                            # Medium warnings
+                            if medium_warnings:
+                                st.info("ℹ️ **MEDIUM PRIORITY NOTES**")
+                                for warning in medium_warnings:
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #eff6ff;
+                                        border-left: 4px solid #2563eb;
+                                        padding: 1rem;
+                                        margin: 0.5rem 0;
+                                        border-radius: 8px;
+                                    '>
+                                        <strong style='color: #2563eb;'>{warning.drug_name}</strong><br>
+                                        {warning.message}<br>
+                                        <em style='color: #1e40af;'>{warning.recommendation}</em>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            
+                            # Low warnings
+                            if low_warnings:
+                                st.info("📝 **ADDITIONAL NOTES**")
+                                for warning in low_warnings:
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #f8fafc;
+                                        border-left: 4px solid #64748b;
+                                        padding: 1rem;
+                                        margin: 0.5rem 0;
+                                        border-radius: 8px;
+                                    '>
+                                        <strong style='color: #64748b;'>{warning.drug_name}</strong><br>
+                                        {warning.message}<br>
+                                        <em style='color: #475569;'>{warning.recommendation}</em>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            
+                            # Alternative suggestions
+                            alternatives = safety_result.get('alternatives', [])
+                            if alternatives:
+                                st.markdown("#### 🔄 Alternative Suggestions")
+                                for alt in alternatives:
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #f0f9ff;
+                                        border-left: 4px solid #0ea5e9;
+                                        padding: 1rem;
+                                        margin: 0.5rem 0;
+                                        border-radius: 8px;
+                                    '>
+                                        <strong style='color: #0c4a6e;'>Consider Alternative:</strong><br>
+                                        <strong>{alt.get('original_drug', 'Unknown')}</strong> → <strong>{alt.get('alternative', 'Unknown')}</strong><br>
+                                        <em style='color: #0369a1;'>Reason: {alt.get('reason', 'Safety concern')}</em>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                    
+                    elif safety_result.get('status') == 'error':
+                        st.error(f"❌ Safety analysis failed: {safety_result.get('summary', 'Unknown error')}")
+                    else:
+                        st.info(safety_result.get('summary', 'No safety analysis available'))
+                
+                # ====================================================================
                 # IMPROVEMENT 4: CHAT CONTINUATION
                 # ====================================================================
                 
                 st.markdown("")
                 st.markdown("---")
                 st.markdown("#### 💬 Ask Follow-Up Questions")
+            
+            with tab5:
+                # Doctor Decision Form
+                st.markdown("#### 🩺 Doctor Decision & Treatment Plan")
+                st.markdown("**Please review the clinical summary and enter your treatment decisions:**")
                 
-                # Initialize chat history
-                if 'chat_history' not in st.session_state:
-                    st.session_state['chat_history'] = []
+                # Ensure session state is properly initialized
+                if 'prescriptions' not in st.session_state:
+                    st.session_state['prescriptions'] = []
+                if 'treatment_notes' not in st.session_state:
+                    st.session_state['treatment_notes'] = ""
                 
-                # Add initial summary to chat if not already there
-                if result not in [msg.get('content') for msg in st.session_state['chat_history']]:
-                    st.session_state['chat_history'] = [{
-                        'role': 'assistant',
-                        'content': result,
-                        'timestamp': datetime.now()
-                    }]
+                # Treatment plan section
+                st.markdown("##### 💊 Prescriptions & Medications")
                 
-                # Follow-up question input
-                follow_up_question = st.text_input(
-                    "Ask a follow-up question about this patient",
-                    placeholder="e.g., What are the risks of starting ESA therapy? Should we adjust metformin dose?",
-                    key="follow_up_input"
+                # Add prescription button
+                col_add, col_info = st.columns([1, 3])
+                with col_add:
+                    if st.button("➕ Add Prescription", type="secondary", use_container_width=True, key="add_prescription_tab"):
+                        st.session_state['prescriptions'].append({
+                            'name': '',
+                            'dose': '',
+                            'frequency': 'once daily',
+                            'duration': '',
+                            'instructions': ''
+                        })
+                
+                with col_info:
+                    st.caption(f"📋 {len(st.session_state['prescriptions'])} prescription(s) added")
+                
+                # Display prescriptions
+                for i, prescription in enumerate(st.session_state['prescriptions']):
+                    with st.container():
+                        st.markdown(f"**Prescription {i+1}**")
+                        
+                        col1, col2, col3 = st.columns([2, 1, 1])
+                        
+                        with col1:
+                            prescription['name'] = st.text_input(
+                                "Drug Name",
+                                value=prescription['name'],
+                                key=f"drug_name_tab_{i}",
+                                placeholder="e.g., Metformin, Lisinopril"
+                            )
+                        
+                        with col2:
+                            prescription['dose'] = st.text_input(
+                                "Dose",
+                                value=prescription['dose'],
+                                key=f"dose_tab_{i}",
+                                placeholder="e.g., 500mg, 10mg"
+                            )
+                        
+                        with col3:
+                            prescription['frequency'] = st.selectbox(
+                                "Frequency",
+                                options=["once daily", "twice daily", "three times daily", "four times daily", "as needed"],
+                                index=0 if not prescription['frequency'] else ["once daily", "twice daily", "three times daily", "four times daily", "as needed"].index(prescription['frequency']) if prescription['frequency'] in ["once daily", "twice daily", "three times daily", "four times daily", "as needed"] else 0,
+                                key=f"frequency_tab_{i}"
+                            )
+                        
+                        col4, col5 = st.columns([1, 1])
+                        
+                        with col4:
+                            prescription['duration'] = st.text_input(
+                                "Duration",
+                                value=prescription['duration'],
+                                key=f"duration_tab_{i}",
+                                placeholder="e.g., 7 days, 30 days, ongoing"
+                            )
+                        
+                        with col5:
+                            if st.button("🗑️ Remove", key=f"remove_tab_{i}", type="secondary", use_container_width=True):
+                                if len(st.session_state['prescriptions']) > 0:
+                                    st.session_state['prescriptions'].pop(i)
+                                    st.rerun()
+                        
+                        prescription['instructions'] = st.text_area(
+                            "Special Instructions",
+                            value=prescription['instructions'],
+                            key=f"instructions_tab_{i}",
+                            placeholder="e.g., Take with food, Monitor blood pressure"
+                        )
+                        
+                        st.markdown("---")
+                
+                # Treatment notes
+                st.markdown("##### 📋 Treatment Plan Notes")
+                treatment_notes = st.text_area(
+                    "Additional Treatment Notes",
+                    value=st.session_state.get('treatment_notes', ''),
+                    placeholder="Enter any additional treatment decisions, follow-up plans, or clinical notes...",
+                    key="treatment_notes_tab"
                 )
                 
-                col_ask, col_clear_chat = st.columns([3, 1])
+                # Update session state
+                st.session_state['treatment_notes'] = treatment_notes
                 
-                with col_ask:
-                    ask_button = st.button("💬 Ask Question", use_container_width=True, type="primary")
+                # Submit button
+                col_submit, col_clear = st.columns([1, 1])
                 
-                with col_clear_chat:
-                    if st.button("🗑️ Clear Chat", use_container_width=True):
-                        st.session_state['chat_history'] = []
+                with col_submit:
+                    submit_decision = st.button("🔍 Run Safety Check", type="primary", use_container_width=True, key="run_safety_check_tab")
+                
+                with col_clear:
+                    if st.button("🗑️ Clear Form", use_container_width=True, key="clear_form_tab"):
+                        st.session_state['prescriptions'] = []
+                        st.session_state['treatment_notes'] = ""
+                        st.session_state['doctor_decision'] = None
+                        st.session_state['safety_result'] = None
                         st.rerun()
                 
-                # Handle follow-up question
-                if ask_button and follow_up_question.strip():
-                    # Add user question to history
-                    st.session_state['chat_history'].append({
-                        'role': 'user',
-                        'content': follow_up_question,
-                        'timestamp': datetime.now()
-                    })
-                    
-                    # Generate response
-                    with st.spinner("Thinking..."):
-                        # Build context with chat history
-                        chat_context = f"""
-Previous clinical summary for patient {patient_id}:
-{result}
-
-Patient data available: EHR, Labs, Meds, Imaging, DDI, Guidelines
-
-Follow-up question: {follow_up_question}
-
-Provide a brief, focused answer (50-100 words) based on the patient data and clinical guidelines.
-If the question requires data not in the summary, reference the appropriate source [EHR/LABS/MEDS/etc].
-"""
+                # Handle safety check
+                if submit_decision:
+                    if not st.session_state['prescriptions'] or not any(p.get('name') for p in st.session_state['prescriptions']):
+                        st.warning("⚠️ Please add at least one prescription before running safety check.")
+                    else:
+                        # Prepare doctor decision
+                        doctor_decision = {
+                            'prescriptions': [p for p in st.session_state['prescriptions'] if p.get('name')],
+                            'treatment_notes': treatment_notes,
+                            'timestamp': datetime.now().isoformat()
+                        }
                         
-                        llm = MedGemmaLLM()
+                        # Store in session state
+                        st.session_state['doctor_decision'] = doctor_decision
                         
-                        # Get observations if available
-                        obs = st.session_state.get('observations', {})
-                        
-                        try:
-                            # Simple synthesis for follow-up
-                            response = llm.synthesize(
-                                system_prompt="You are a clinical assistant answering follow-up questions. Be concise and cite sources.",
-                                user_prompt=chat_context,
-                                observations=obs
-                            )
-                        except:
-                            response = "I'm having trouble generating a response. Please try rephrasing your question or run a new analysis."
-                        
-                        # Add assistant response to history
-                        st.session_state['chat_history'].append({
-                            'role': 'assistant',
-                            'content': response,
-                            'timestamp': datetime.now()
-                        })
-                        
-                        st.rerun()
+                        # Run safety monitor
+                        with st.spinner("🔍 Running comprehensive safety analysis..."):
+                            try:
+                                from agent.orchestrator import run_safety_monitor
+                                
+                                # Get patient context from observations
+                                patient_context = st.session_state.get('observations', {})
+                                
+                                # Run safety monitor
+                                safety_result = run_safety_monitor(
+                                    st.session_state.get('patient_id', 'P001'), 
+                                    doctor_decision, 
+                                    patient_context, 
+                                    lambda msg: st.write(f"Safety Check: {msg}")
+                                )
+                                
+                                # Store safety results
+                                st.session_state['safety_result'] = safety_result
+                                
+                                st.success("✅ Safety analysis completed!")
+                                st.rerun()
+                                
+                            except Exception as e:
+                                st.error(f"❌ Safety check failed: {str(e)}")
                 
-                # Display chat history
-                if len(st.session_state.get('chat_history', [])) > 1:
+                # Display safety results if available
+                if 'safety_result' in st.session_state:
                     st.markdown("")
-                    st.markdown("**Conversation History:**")
+                    st.markdown("---")
+                    st.markdown("#### 🛡️ Safety Analysis Results")
                     
-                    for i, msg in enumerate(st.session_state['chat_history']):
-                        if msg['role'] == 'user':
-                            st.markdown(f"""
-                            <div style='
-                                background: #eff6ff;
-                                border-left: 4px solid #3b82f6;
-                                padding: 1rem;
-                                border-radius: 8px;
-                                margin: 0.5rem 0;
-                            '>
-                                <div style='color: #1e40af; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem;'>
-                                    👤 You asked:
-                                </div>
-                                <div style='color: #475569;'>{msg['content']}</div>
-                            </div>
-                            """, unsafe_allow_html=True)
+                    safety_result = st.session_state['safety_result']
+                    
+                    # Safety summary
+                    if safety_result.get('status') == 'completed':
+                        warnings = safety_result.get('warnings', [])
+                        
+                        if not warnings:
+                            st.success("✅ All prescriptions appear safe based on current patient data.")
                         else:
-                            # Skip first assistant message (it's the main summary shown above)
-                            if i > 0:
-                                st.markdown(f"""
-                                <div style='
-                                    background: #f0fdf4;
-                                    border-left: 4px solid #22c55e;
-                                    padding: 1rem;
-                                    border-radius: 8px;
-                                    margin: 0.5rem 0;
-                                '>
-                                    <div style='color: #166534; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem;'>
-                                        🤖 Assistant:
+                            # Display warnings by severity
+                            critical_warnings = [w for w in warnings if w.severity == 'critical']
+                            high_warnings = [w for w in warnings if w.severity == 'high']
+                            medium_warnings = [w for w in warnings if w.severity == 'medium']
+                            low_warnings = [w for w in warnings if w.severity == 'low']
+                            
+                            # Critical warnings
+                            if critical_warnings:
+                                st.error("🚨 **CRITICAL SAFETY ISSUES**")
+                                for warning in critical_warnings:
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #fee2e2;
+                                        border-left: 4px solid #dc2626;
+                                        padding: 1rem;
+                                        margin: 0.5rem 0;
+                                        border-radius: 8px;
+                                    '>
+                                        <strong style='color: #dc2626;'>{warning.drug_name}</strong><br>
+                                        {warning.message}<br>
+                                        <em style='color: #991b1b;'>{warning.recommendation}</em>
                                     </div>
-                                    <div style='color: #475569;'>{msg['content']}</div>
-                                </div>
-                                """, unsafe_allow_html=True)
-            
-# ============================================================================
-            # IMPROVEMENT 3: ENHANCED DATA INSIGHTS WITH GRAPHS
-            # ============================================================================
-            
-            with tab2:
-                st.markdown("#### 📊 Data Insights & Analysis")
-                
-                # Check if we have multi-agent insights
-                observations = st.session_state.get('observations', {})
-                has_analysis = 'ANALYSIS' in observations
-                has_risks = 'RISKS' in observations
-                has_guidelines = 'GUIDELINES' in observations
-                
-                if has_analysis or has_risks or has_guidelines:
-                    # Multi-agent insights available
-                    st.markdown("##### 🤖 AI Agent Analysis")
+                                    """, unsafe_allow_html=True)
+                            
+                            # High warnings
+                            if high_warnings:
+                                st.warning("⚠️ **HIGH PRIORITY WARNINGS**")
+                                for warning in high_warnings:
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #fef3c7;
+                                        border-left: 4px solid #d97706;
+                                        padding: 1rem;
+                                        margin: 0.5rem 0;
+                                        border-radius: 8px;
+                                    '>
+                                        <strong style='color: #d97706;'>{warning.drug_name}</strong><br>
+                                        {warning.message}<br>
+                                        <em style='color: #92400e;'>{warning.recommendation}</em>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            
+                            # Medium warnings
+                            if medium_warnings:
+                                st.info("ℹ️ **MEDIUM PRIORITY NOTES**")
+                                for warning in medium_warnings:
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #eff6ff;
+                                        border-left: 4px solid #2563eb;
+                                        padding: 1rem;
+                                        margin: 0.5rem 0;
+                                        border-radius: 8px;
+                                    '>
+                                        <strong style='color: #2563eb;'>{warning.drug_name}</strong><br>
+                                        {warning.message}<br>
+                                        <em style='color: #1e40af;'>{warning.recommendation}</em>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            
+                            # Low warnings
+                            if low_warnings:
+                                st.info("📝 **ADDITIONAL NOTES**")
+                                for warning in low_warnings:
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #f8fafc;
+                                        border-left: 4px solid #64748b;
+                                        padding: 1rem;
+                                        margin: 0.5rem 0;
+                                        border-radius: 8px;
+                                    '>
+                                        <strong style='color: #64748b;'>{warning.drug_name}</strong><br>
+                                        {warning.message}<br>
+                                        <em style='color: #475569;'>{warning.recommendation}</em>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            
+                            # Alternative suggestions
+                            alternatives = safety_result.get('alternatives', [])
+                            if alternatives:
+                                st.markdown("#### 🔄 Alternative Suggestions")
+                                for alt in alternatives:
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #f0f9ff;
+                                        border-left: 4px solid #0ea5e9;
+                                        padding: 1rem;
+                                        margin: 0.5rem 0;
+                                        border-radius: 8px;
+                                    '>
+                                        <strong style='color: #0c4a6e;'>Consider Alternative:</strong><br>
+                                        <strong>{alt.get('original_drug', 'Unknown')}</strong> → <strong>{alt.get('alternative', 'Unknown')}</strong><br>
+                                        <em style='color: #0369a1;'>Reason: {alt.get('reason', 'Safety concern')}</em>
+                                    </div>
+                                    """, unsafe_allow_html=True)
                     
-                    # Analysis insights
-                    if has_analysis:
-                        analysis = observations['ANALYSIS']
-                        
-                        # Trends section
-                        if analysis.get('trends'):
-                            st.markdown("**📈 Lab Trends Detected:**")
-                            for trend in analysis['trends']:
-                                direction_icon = "📈" if trend['direction'] == "↑" else "📉"
-                                st.markdown(f"""
-                                <div style='background: #f8fafc; border-left: 4px solid #3b82f6; padding: 1rem; margin: 0.5rem 0; border-radius: 8px;'>
-                                    <strong>{trend['test']}</strong>: {trend['change']} {direction_icon}<br>
-                                    <small style='color: #64748b;'>{trend['clinical_significance']}</small>
-                                </div>
-                                """, unsafe_allow_html=True)
-                        
-                        # Patterns section
-                        if analysis.get('patterns'):
-                            st.markdown("**🔍 Clinical Patterns Identified:**")
-                            for pattern in analysis['patterns']:
-                                st.markdown(f"""
-                                <div style='background: #f0fdf4; border-left: 4px solid #22c55e; padding: 1rem; margin: 0.5rem 0; border-radius: 8px;'>
-                                    <strong>{pattern['name']}</strong><br>
-                                    <small style='color: #166534;'>{pattern['description']}</small><br>
-                                    <small style='color: #64748b;'><strong>Monitoring:</strong> {pattern['monitoring']}</small>
-                                </div>
-                                """, unsafe_allow_html=True)
-                    
-                    # Risk insights
-                    if has_risks:
-                        risks = observations['RISKS']
-                        
-                        if risks.get('risks'):
-                            st.markdown("**⚠️ High-Risk Findings:**")
-                            for risk in risks['risks']:
-                                severity_color = {"major": "#ef4444", "moderate": "#eab308", "minor": "#22c55e"}.get(risk.get('severity', 'unknown'), "#3b82f6")
-                                st.markdown(f"""
-                                <div style='background: #fef2f2; border-left: 4px solid {severity_color}; padding: 1rem; margin: 0.5rem 0; border-radius: 8px;'>
-                                    <strong>{risk['type']}</strong> - {risk['severity'].upper()}<br>
-                                    <small style='color: #991b1b;'>{risk['description']}</small><br>
-                                    <small style='color: #64748b;'><strong>Action:</strong> {risk['action']}</small>
-                                </div>
-                                """, unsafe_allow_html=True)
-                        
-                        if risks.get('critical_values'):
-                            st.markdown("**🚨 Critical Lab Values:**")
-                            for critical in risks['critical_values']:
-                                st.markdown(f"""
-                                <div style='background: #fef2f2; border-left: 4px solid #ef4444; padding: 1rem; margin: 0.5rem 0; border-radius: 8px;'>
-                                    <strong>{critical['test']}</strong>: {critical['value']} ({critical['status']})<br>
-                                    <small style='color: #991b1b;'><strong>Action:</strong> {critical['action']}</small>
-                                </div>
-                                """, unsafe_allow_html=True)
-                    
-                    # Guidelines insights
-                    if has_guidelines:
-                        guidelines = observations['GUIDELINES']
-                        
-                        if guidelines.get('recommendations'):
-                            st.markdown("**📚 Evidence-Based Recommendations:**")
-                            for rec in guidelines['recommendations']:
-                                urgency_color = {"Within 2-4 weeks": "#ef4444", "Non-urgent": "#22c55e"}.get(rec.get('urgency', ''), "#3b82f6")
-                                st.markdown(f"""
-                                <div style='background: #eff6ff; border-left: 4px solid {urgency_color}; padding: 1rem; margin: 0.5rem 0; border-radius: 8px;'>
-                                    <strong>{rec['source']}</strong><br>
-                                    <small style='color: #1e40af;'>{rec['recommendation']}</small><br>
-                                    <small style='color: #64748b;'><strong>Strength:</strong> {rec['strength']} | <strong>Urgency:</strong> {rec['urgency']}</small>
-                                </div>
-                                """, unsafe_allow_html=True)
-                    
-                    st.markdown("---")
-                
-                # Data retrieval overview (existing functionality)
-                st.markdown("#### 📊 Data Retrieval Overview")
-                
-                # Metrics row
-                met_col1, met_col2, met_col3, met_col4 = st.columns(4)
-                
-                log_messages = [log['message'] for log in logs]
-                observations = st.session_state.get('observations', {})
-                
-                # Calculate metrics from observations
-                sources_retrieved = sum(1 for source in ['EHR', 'LABS', 'MEDS', 'IMAGING', 'DDI', 'GUIDE'] 
-                                      if source in observations and observations[source] and 
-                                      not (isinstance(observations[source], dict) and 'error' in observations[source]))
-                sources_failed = sum(1 for source in ['EHR', 'LABS', 'MEDS', 'IMAGING', 'DDI', 'GUIDE'] 
-                                   if source in observations and isinstance(observations[source], dict) and 'error' in observations[source])
-                sources_skipped = sum(1 for source in ['EHR', 'LABS', 'MEDS', 'IMAGING', 'DDI', 'GUIDE'] 
-                                    if source not in observations or not observations[source])
-                total_time = len(logs) * 0.5  # Approximate
-                
-                with met_col1:
-                    st.metric("✅ Retrieved", sources_retrieved)
-                
-                with met_col2:
-                    st.metric("➖ Skipped", sources_skipped, delta="Optimized", delta_color="off")
-                
-                with met_col3:
-                    st.metric("❌ Failed", sources_failed, delta_color="inverse")
-                
-                with met_col4:
-                    st.metric("⏱️ Time", f"{total_time:.1f}s")
-                
-                st.markdown("")
-                st.markdown("---")
-                
-                # Debug information (can be removed later)
-                if st.checkbox("🔍 Show Debug Info", value=False):
-                    st.markdown("**Debug Information:**")
-                    st.json({
-                        'observations_keys': list(observations.keys()),
-                        'log_messages': log_messages[:5],  # First 5 messages
-                        'source_status': source_status
-                    })
-                    st.markdown("---")
-                
-                # Visual breakdown of sources used
-                st.markdown("#### 🗂️ Data Sources Breakdown")
-                
-                source_status = {}
-                for source in ['EHR', 'LABS', 'MEDS', 'IMAGING', 'DDI', 'GUIDE']:
-                    # Check if data exists in observations
-                    if source in observations and observations[source]:
-                        # Check if it's an error
-                        if isinstance(observations[source], dict) and 'error' in observations[source]:
-                            source_status[source] = "Failed"
-                        else:
-                            source_status[source] = "Retrieved"
+                    elif safety_result.get('status') == 'error':
+                        st.error(f"❌ Safety analysis failed: {safety_result.get('summary', 'Unknown error')}")
                     else:
-                        # Fallback to log message detection for backward compatibility
-                        if any(source in msg for msg in log_messages if "COMPLETED" in msg):
-                            source_status[source] = "Retrieved"
-                        elif any(source in msg for msg in log_messages if "SKIPPED" in msg):
-                            source_status[source] = "Skipped"
-                        elif any(source in msg for msg in log_messages if "FAILED" in msg):
-                            source_status[source] = "Failed"
-                        else:
-                            source_status[source] = "Not Attempted"
-                
-                # Create pie chart
-                status_counts = {}
-                for status in source_status.values():
-                    status_counts[status] = status_counts.get(status, 0) + 1
-                
-                col_chart, col_legend = st.columns([2, 1])
-                
-                with col_chart:
-                    colors = {
-                        "Retrieved": "#22c55e",
-                        "Skipped": "#94a3b8",
-                        "Failed": "#ef4444",
-                        "Not Attempted": "#e5e7eb"
-                    }
-                    
-                    fig = go.Figure(data=[go.Pie(
-                        labels=list(status_counts.keys()),
-                        values=list(status_counts.values()),
-                        marker=dict(colors=[colors.get(k, "#3b82f6") for k in status_counts.keys()]),
-                        hole=0.4,
-                        textinfo='label+value',
-                        textfont=dict(size=14, family='Inter')
-                    )])
-                    
-                    fig.update_layout(
-                        title="Source Retrieval Status",
-                        showlegend=False,
-                        height=300,
-                        margin=dict(l=20, r=20, t=40, b=20)
-                    )
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-                
-                with col_legend:
-                    st.markdown("**Status Legend:**")
-                    for source, status in source_status.items():
-                        color = colors.get(status, "#3b82f6")
-                        st.markdown(f"""
-                        <div style='padding: 0.5rem; margin: 0.3rem 0; background: {color}20; border-left: 3px solid {color}; border-radius: 4px;'>
-                            <strong>{source}</strong>: {status}
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                st.markdown("")
-                st.markdown("---")
-                
-                # Retrieved data details
-                st.markdown("#### 📁 Retrieved Data Details")
-                
-                source_details = {
-                    'EHR': {'icon': '👤', 'name': 'Electronic Health Record'},
-                    'LABS': {'icon': '🧪', 'name': 'Laboratory Results'},
-                    'MEDS': {'icon': '💊', 'name': 'Medications'},
-                    'IMAGING': {'icon': '🔬', 'name': 'Imaging Reports'},
-                    'DDI': {'icon': '⚠️', 'name': 'Drug Interactions'},
-                    'GUIDE': {'icon': '📚', 'name': 'Clinical Guidelines'}
-                }
-                
-                for source, details in source_details.items():
-                    status = source_status.get(source, "Unknown")
-                    
-                    if status == "Retrieved":
-                        with st.expander(f"{details['icon']} {details['name']} - {status}", expanded=False):
-                            # Show structured preview instead of raw JSON
-                            if source == 'EHR' and 'EHR' in st.session_state.get('observations', {}):
-                                ehr_data = st.session_state['observations']['EHR']
-                                st.write(f"**Patient:** {ehr_data.get('demographics', {}).get('name', 'N/A')}")
-                                st.write(f"**Age/Gender:** {ehr_data.get('demographics', {}).get('age')} / {ehr_data.get('demographics', {}).get('gender')}")
-                                st.write(f"**Conditions:** {len(ehr_data.get('conditions', []))} active")
-                                st.write(f"**Allergies:** {len(ehr_data.get('allergies', []))}")
-                                with st.expander("View full JSON"):
-                                    st.json(ehr_data)
-                            
-                            elif source == 'LABS' and 'LABS' in st.session_state.get('observations', {}):
-                                labs_data = st.session_state['observations']['LABS']
-                                results = labs_data.get('results', [])
-                                st.write(f"**Total Tests:** {len(results)}")
-                                abnormal = [r for r in results if r.get('status') in ['HIGH', 'LOW']]
-                                st.write(f"**Abnormal:** {len(abnormal)}")
-                                if abnormal:
-                                    st.write("**Abnormal Values:**")
-                                    for r in abnormal[:5]:
-                                        st.write(f"- {r['test']}: {r['value']} {r['unit']} ({r['status']})")
-                                with st.expander("View full JSON"):
-                                    st.json(labs_data)
-                            
-                            elif source == 'MEDS' and 'MEDS' in st.session_state.get('observations', {}):
-                                meds_data = st.session_state['observations']['MEDS']
-                                active = meds_data.get('active', [])
-                                st.write(f"**Active Medications:** {len(active)}")
-                                for med in active[:5]:
-                                    st.write(f"- {med.get('name')} {med.get('dose')} - {med.get('indication')}")
-                                with st.expander("View full JSON"):
-                                    st.json(meds_data)
-                            
-                            elif source == 'DDI' and 'DDI' in st.session_state.get('observations', {}):
-                                ddi_data = st.session_state['observations']['DDI']
-                                if isinstance(ddi_data, list):
-                                    st.write(f"**Interactions Found:** {len(ddi_data)}")
-                                    for interaction in ddi_data[:5]:
-                                        severity = interaction.get('severity', 'unknown')
-                                        severity_color = {"major": "🔴", "moderate": "🟡", "minor": "🟢"}.get(severity, "⚪")
-                                        st.write(f"{severity_color} {interaction.get('a')} + {interaction.get('b')} ({severity})")
-                                with st.expander("View full JSON"):
-                                    st.json(ddi_data)
-                            
-                            else:
-                                # Default JSON view
-                                if source in st.session_state.get('observations', {}):
-                                    st.json(st.session_state['observations'][source])
-                    else:
-                        st.markdown(f"{details['icon']} {details['name']} - *{status}*")
-            
-            with tab3:
-                # Raw output with copy button
-                st.markdown("#### Raw Text Output")
-                st.code(result, language="markdown")
-            
-            with tab4:
-                # Execution timeline
-                st.markdown("#### Execution Timeline")
-                
-                timeline_data = []
-                for i, log in enumerate(logs):
-                    step_type = "Processing"
-                    if "COMPLETED" in log['message']:
-                        step_type = "Completed"
-                    elif "FAILED" in log['message']:
-                        step_type = "Failed"
-                    elif "SKIPPED" in log['message']:
-                        step_type = "Skipped"
-                    
-                    timeline_data.append({
-                        'Step': i + 1,
-                        'Action': log['message'],
-                        'Status': step_type,
-                        'Time': log['timestamp'].strftime("%H:%M:%S.%f")[:-3]
-                    })
-                
-                # Display as structured table
-                for item in timeline_data:
-                    status_class = {
-                        'Completed': 'status-success',
-                        'Failed': 'status-error',
-                        'Skipped': 'status-info',
-                        'Processing': 'status-processing'
-                    }.get(item['Status'], 'status-info')
-                    
-                    st.markdown(f"""
-                    <div style='
-                        padding: 0.8rem;
-                        margin: 0.5rem 0;
-                        background: white;
-                        border-radius: 8px;
-                        border-left: 3px solid #3b82f6;
-                    '>
-                        <div style='display: flex; justify-content: space-between; align-items: center;'>
-                            <div>
-                                <span style='font-weight: 600; color: #475569;'>Step {item['Step']}</span>
-                                <span style='margin-left: 1rem; color: #64748b;'>{item['Action']}</span>
-                            </div>
-                            <div>
-                                <span class='status-indicator {status_class}'>{item['Status']}</span>
-                                <span style='margin-left: 1rem; font-size: 0.85rem; color: #94a3b8;'>{item['Time']}</span>
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                        st.info(safety_result.get('summary', 'No safety analysis available'))
+        
+        # ============================================================================
+        # OLD DOCTOR DECISION FORM - REMOVED (now in tab5)
+        # ============================================================================
+        
+        # This section has been moved to tab5 to prevent conflicts
 
 # ============================================================================
 # CACHED RESULTS DISPLAY
 # ============================================================================
 
-elif 'result' in st.session_state:
-    st.markdown("")
-    st.markdown("<hr style='margin: 2rem 0; border: none; border-top: 2px solid #e5e7eb;'>", unsafe_allow_html=True)
-    
-    # Cached results banner
-    st.markdown("""
-    <div style='
-        background: #fef3c7;
-        border-left: 4px solid #eab308;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
-    '>
-        <strong style='color: #92400e;'>ℹ Viewing Cached Results</strong>
-        <p style='margin: 0.5rem 0 0 0; color: #92400e; font-size: 0.9rem;'>
-            These are previously generated results. Click "Run Clinical Analysis" for fresh analysis.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("### 📊 Clinical Summary")
-    
-    # Results container
-    st.markdown("<div class='results-container'>", unsafe_allow_html=True)
-    st.markdown(st.session_state['result'])
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Download button
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    st.download_button(
-        label="⤓ Download Cached Report",
-        data=st.session_state['result'],
-        file_name=f"clinical_summary_{patient_id}_{timestamp}.txt",
-        mime="text/plain"
-    )
+# This section has been removed to prevent duplication
 
 # ============================================================================
 # FOOTER
@@ -1336,4 +1425,3 @@ st.markdown("""
     Hybrid Intelligent Mode Active | Version 2.0
 </div>
 """, unsafe_allow_html=True)
-
