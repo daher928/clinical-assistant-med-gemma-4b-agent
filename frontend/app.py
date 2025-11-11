@@ -613,6 +613,253 @@ st.markdown("""
     .risk-low { border-left: 4px solid #22c55e; }
     .risk-medium { border-left: 4px solid #eab308; }
     .risk-high { border-left: 4px solid #ef4444; }
+    
+    /* Modern Step Cards for Agent Progress */
+    .step-card {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 0.75rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .step-card.active {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border: 2px solid #3b82f6;
+        box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2);
+        animation: pulse-glow 2s ease-in-out infinite;
+        transform: scale(1);
+    }
+    
+    .step-card.completed {
+        background: #f0fdf4;
+        border-left: 4px solid #22c55e;
+        opacity: 1;
+        animation: fade-in 0.5s ease-out;
+    }
+    
+    .step-card.pending {
+        opacity: 0.5;
+        background: #f9fafb;
+        border-color: #e5e7eb;
+    }
+    
+    .step-card.failed {
+        background: #fef2f2;
+        border-left: 4px solid #ef4444;
+    }
+    
+    .step-card.skipped {
+        background: #fffbeb !important;
+        border-left: 4px solid #f59e0b !important;
+        border-color: #f59e0b !important;
+        opacity: 1 !important;
+    }
+    
+    .step-icon {
+        width: 3rem;
+        height: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+        position: relative;
+    }
+    
+    .step-card.active .step-icon {
+        background: #3b82f6;
+        color: white;
+        animation: pulse-icon 1.5s ease-in-out infinite;
+        position: relative;
+    }
+    
+    .step-card.active .step-icon::after {
+        content: '✨';
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        font-size: 0.75rem;
+        animation: sparkle-icon 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes sparkle-icon {
+        0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        50% { opacity: 0.8; transform: scale(1.3) rotate(180deg); }
+    }
+    
+    @keyframes pulse-icon {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    .step-card.completed .step-icon {
+        background: #22c55e;
+        color: white;
+    }
+    
+    .step-card.pending .step-icon {
+        background: #e5e7eb;
+        color: #94a3b8;
+    }
+    
+    .step-card.failed .step-icon {
+        background: #ef4444;
+        color: white;
+    }
+    
+    .step-card.skipped .step-icon {
+        background: #fbbf24 !important;
+        color: white !important;
+    }
+    
+    .step-card.skipped .step-title {
+        color: #92400e !important;
+    }
+    
+    .step-card.skipped .step-description {
+        color: #a16207 !important;
+    }
+    
+    .step-content {
+        flex: 1;
+    }
+    
+    .step-title {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #1e293b;
+        margin: 0 0 0.25rem 0;
+    }
+    
+    .step-card.active .step-title {
+        font-size: 1.2rem;
+        color: #1e40af;
+    }
+    
+    .step-card.completed .step-title {
+        color: #166534;
+    }
+    
+    .step-description {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin: 0;
+        line-height: 1.4;
+    }
+    
+    .step-card.active .step-description {
+        color: #475569;
+    }
+    
+    .step-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .step-card.completed .step-status {
+        color: #22c55e;
+    }
+    
+    .step-card.failed .step-status {
+        color: #ef4444;
+    }
+    
+    .step-card.skipped .step-status {
+        color: #d97706;
+        font-weight: 600;
+    }
+    
+    /* Phase Grouping */
+    .phase-group {
+        margin: 2rem 0;
+    }
+    
+    .phase-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #3b82f6;
+    }
+    
+    .phase-title {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #1e293b;
+        margin: 0 0 0.25rem 0;
+    }
+    
+    .phase-progress {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin: 0;
+    }
+    
+    /* Animations */
+    @keyframes pulse-glow {
+        0%, 100% { 
+            transform: scale(1); 
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2); 
+        }
+        50% { 
+            transform: scale(1.01); 
+            box-shadow: 0 12px 24px rgba(59, 130, 246, 0.3); 
+        }
+    }
+    
+    @keyframes fade-in {
+        from { 
+            opacity: 0; 
+            transform: translateY(-10px); 
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    @keyframes sparkle {
+        0%, 100% { 
+            opacity: 1; 
+            transform: scale(1) rotate(0deg); 
+        }
+        50% { 
+            opacity: 0.7; 
+            transform: scale(1.2) rotate(180deg); 
+        }
+    }
+    
+    @keyframes sparkle-icon {
+        0%, 100% { 
+            opacity: 1; 
+            transform: scale(1) rotate(0deg); 
+        }
+        50% { 
+            opacity: 0.8; 
+            transform: scale(1.3) rotate(180deg); 
+        }
+    }
+    
+    .step-icon .fa-spinner {
+        animation: spin 1s linear infinite;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -628,8 +875,10 @@ st.markdown("""
     <div style='display: flex; align-items: center; justify-content: space-between;'>
         <div>
             <h1 style='margin: 0; color: #ffffff; font-size: 2.25rem; font-weight: 700; 
-                       font-family: "Poppins", sans-serif; letter-spacing: -0.02em;'>
+                       font-family: "Poppins", sans-serif; letter-spacing: -0.02em;
+                       position: relative; padding-right: 2rem;'>
                 ⚕️ Clinical Decision Support
+                <i class="fas fa-sparkles" style='position: absolute; top: 0; right: 0; color: #60a5fa; font-size: 1.1rem; animation: sparkle 2s ease-in-out infinite;'></i>
             </h1>
             <p style='margin: 0.5rem 0 0 0; color: #94a3b8; font-size: 1rem; font-weight: 500;'>
                 AI-Powered Clinical Intelligence • Powered by MedGemma
@@ -763,6 +1012,252 @@ if not patient_data:
             "default_complaint": "Increased shortness of breath and wheezing for 3 days."
         }
     }
+
+# ============================================================================
+# AGENT PROGRESS DISPLAY - STEP MAPPING AND RENDERING
+# ============================================================================
+
+# Step definitions with user-friendly descriptions
+# Ordered by phase and logical sequence
+STEP_DEFINITIONS = {
+    'FETCH_EHR': {
+        'title': 'Reviewing Medical History',
+        'icon': 'fa-file-medical',
+        'description': 'Gathering patient demographics, conditions, and medical history',
+        'phase': 1,
+        'phase_name': 'Gathering Information',
+        'order': 1
+    },
+    'FETCH_LABS': {
+        'title': 'Analyzing Lab Results',
+        'icon': 'fa-flask',
+        'description': 'Reviewing laboratory test results and vital signs',
+        'phase': 1,
+        'phase_name': 'Gathering Information',
+        'order': 2
+    },
+    'FETCH_MEDS': {
+        'title': 'Reviewing Medications',
+        'icon': 'fa-pills',
+        'description': 'Checking current medications and dosages',
+        'phase': 1,
+        'phase_name': 'Gathering Information',
+        'order': 3
+    },
+    'FETCH_IMAGING': {
+        'title': 'Checking Imaging Reports',
+        'icon': 'fa-x-ray',
+        'description': 'Reviewing radiology and imaging studies',
+        'phase': 1,
+        'phase_name': 'Gathering Information',
+        'order': 4
+    },
+    'CHECK_DDI': {
+        'title': 'Screening Drug Interactions',
+        'icon': 'fa-exclamation-triangle',
+        'description': 'Checking for potential medication interactions',
+        'phase': 2,
+        'phase_name': 'Safety Analysis',
+        'order': 1
+    },
+    'SAFETY_CHECK': {
+        'title': 'Checking Safety Issues',
+        'icon': 'fa-shield-halved',
+        'description': 'Identifying safety concerns and contraindications',
+        'phase': 2,
+        'phase_name': 'Safety Analysis',
+        'order': 2
+    },
+    'SEARCH_GUIDELINES': {
+        'title': 'Consulting Clinical Guidelines',
+        'icon': 'fa-book-medical',
+        'description': 'Reviewing evidence-based treatment guidelines',
+        'phase': 3,
+        'phase_name': 'Clinical Analysis',
+        'order': 1
+    },
+    'REASONING': {
+        'title': 'Analyzing Information',
+        'icon': 'fa-brain',
+        'description': 'Processing all data to form clinical insights',
+        'phase': 3,
+        'phase_name': 'Clinical Analysis',
+        'order': 2
+    },
+    'SYNTHESIS': {
+        'title': 'Generating Clinical Summary',
+        'icon': 'fa-stethoscope',
+        'description': 'Creating diagnosis and treatment recommendations',
+        'phase': 3,
+        'phase_name': 'Clinical Analysis',
+        'order': 3
+    }
+}
+
+def translate_step_message(message: str) -> dict:
+    """
+    Translate technical agent messages to user-friendly step information.
+    
+    Handles multiple message formats:
+    - Standard: "FETCH_EHR_STARTED", "FETCH_EHR_COMPLETED"
+    - Intelligent agent: "EXECUTING_TOOL: get_ehr", "TOOL_COMPLETED: get_ehr"
+    - Reasoning: "REASONING: ..."
+    - Synthesis: "SYNTHESIS_STARTED", "SYNTHESIS_COMPLETED"
+    
+    Args:
+        message: Technical message from agent
+        
+    Returns:
+        Dict with step info or None if not recognized
+    """
+    message_upper = message.upper()
+    
+    # Map tool names to step keys (for intelligent agent format)
+    tool_name_to_step_key = {
+        'GET_EHR': 'FETCH_EHR',
+        'GET_LABS': 'FETCH_LABS',
+        'GET_MEDS': 'FETCH_MEDS',
+        'GET_IMAGING': 'FETCH_IMAGING',
+        'QUERY_DDI': 'CHECK_DDI',
+        'SEARCH_GUIDELINES': 'SEARCH_GUIDELINES',
+        'EHR': 'FETCH_EHR',
+        'LABS': 'FETCH_LABS',
+        'MEDS': 'FETCH_MEDS',
+        'IMAGING': 'FETCH_IMAGING',
+        'DDI': 'CHECK_DDI',
+        'GUIDELINES': 'SEARCH_GUIDELINES'
+    }
+    
+    # Extract step key from message
+    step_key = None
+    
+    # First, try direct match with STEP_DEFINITIONS keys
+    for key in STEP_DEFINITIONS.keys():
+        if key in message_upper:
+            step_key = key
+            break
+    
+    # If not found, try tool name mapping (for intelligent agent format)
+    if not step_key:
+        for tool_name, mapped_key in tool_name_to_step_key.items():
+            if tool_name in message_upper:
+                step_key = mapped_key
+                break
+    
+    # Handle special cases
+    if not step_key:
+        if 'REASONING' in message_upper or 'ANALYZING' in message_upper:
+            step_key = 'REASONING'
+        elif 'SYNTHESIS' in message_upper:
+            step_key = 'SYNTHESIS'
+        elif 'SAFETY' in message_upper and 'CHECK' in message_upper:
+            step_key = 'SAFETY_CHECK'
+    
+    if not step_key:
+        return None
+    
+    step_info = STEP_DEFINITIONS[step_key].copy()
+    
+    # Determine status
+    if 'STARTED' in message_upper or 'EXECUTING' in message_upper or 'REASONING' in message_upper:
+        step_info['status'] = 'active'
+    elif 'COMPLETED' in message_upper:
+        step_info['status'] = 'completed'
+    elif 'FAILED' in message_upper or 'ERROR' in message_upper:
+        step_info['status'] = 'failed'
+    elif 'SKIPPED' in message_upper:
+        step_info['status'] = 'skipped'
+    else:
+        # Default to active if we matched a step but status is unclear
+        step_info['status'] = 'active'
+    
+    step_info['raw_message'] = message
+    return step_info
+
+
+def render_step_card(step_data: dict, state: str = None) -> str:
+    """
+    Render a single step card with modern styling.
+    
+    Args:
+        step_data: Step information dict from translate_step_message
+        state: Override state (active, completed, pending, failed, skipped)
+        
+    Returns:
+        HTML string for the step card
+    """
+    import html
+    
+    status = state if state else step_data.get('status', 'pending')
+    title = html.escape(step_data.get('title', 'Unknown Step'))
+    description = html.escape(step_data.get('description', ''))
+    icon = step_data.get('icon', 'fa-circle')
+    
+    # Determine icon based on status
+    if status == 'active':
+        icon_html = f'<i class="fas {icon}"></i>'
+        status_text = 'In progress'
+    elif status == 'completed':
+        icon_html = '<i class="fas fa-check"></i>'
+        status_text = 'Complete'
+    elif status == 'failed':
+        icon_html = '<i class="fas fa-times"></i>'
+        status_text = 'Failed'
+    elif status == 'skipped':
+        icon_html = '<i class="fas fa-info-circle"></i>'
+        status_text = 'Not relevant'
+    else:  # pending
+        icon_html = f'<i class="fas {icon}"></i>'
+        status_text = ''
+    
+    # Add AI sparkle icon for active steps
+    ai_indicator = ''
+    if status == 'active':
+        ai_indicator = '<i class="fas fa-sparkles" style="position: absolute; top: -8px; right: -8px; color: #3b82f6; font-size: 0.875rem; animation: sparkle-icon 1.5s ease-in-out infinite;"></i>'
+    
+    # Build HTML output without extra whitespace
+    status_div = f'<div class="step-status">{html.escape(status_text)}</div>' if status_text else ''
+    
+    html_output = f'<div class="step-card {status}" style="position: relative;"><div class="step-icon">{icon_html}</div>{ai_indicator}<div class="step-content"><div class="step-title">{title}</div><div class="step-description">{description}</div></div>{status_div}</div>'
+    
+    return html_output
+
+
+def render_phase_group(phase_num: int, phase_name: str, steps: list, completed_count: int = 0) -> str:
+    """
+    Render a phase group with header and step cards.
+    
+    Args:
+        phase_num: Phase number (1, 2, or 3)
+        phase_name: Phase name
+        steps: List of step cards HTML
+        completed_count: Number of completed steps in this phase
+        
+    Returns:
+        HTML string for the phase group
+    """
+    import html
+    
+    total_steps = len(steps)
+    progress_text = f"{completed_count} of {total_steps} complete" if total_steps > 0 else ""
+    
+    # Phase descriptions for contextual help
+    phase_descriptions = {
+        1: "Collecting patient medical records, test results, and current medications",
+        2: "Checking for drug interactions and safety concerns",
+        3: "Analyzing data and generating clinical recommendations"
+    }
+    
+    description = phase_descriptions.get(phase_num, "")
+    
+    steps_html = '\n'.join(steps)
+    
+    description_html = f'<div style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.5rem;">{html.escape(description)}</div>' if description else ''
+    
+    html_output = f'<div class="phase-group"><div class="phase-header"><div class="phase-title" style="display: flex; align-items: center; gap: 0.5rem;"><i class="fas fa-sparkles" style="color: #3b82f6; font-size: 0.9rem;"></i>Phase {phase_num}: {html.escape(phase_name)}</div><div class="phase-progress">{html.escape(progress_text)}</div>{description_html}</div>{steps_html}</div>'
+    
+    return html_output
+
 
 # ============================================================================
 # CLINICAL REPORT PARSER AND RENDERER
@@ -1128,76 +1623,243 @@ if run_button:
         st.error("Please enter a clinical complaint")
     else:
 # ============================================================================
-        # IMPROVEMENT 2: MODERN PROGRESS BAR
+        # MODERN STEP CARDS PROGRESS DISPLAY
         # ============================================================================
         
         st.markdown("")
-        st.markdown("### ⚡ Analysis in Progress")
+        st.markdown("""
+        <div style='display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;'>
+            <i class="fas fa-sparkles" style='color: #3b82f6; font-size: 1.5rem; animation: sparkle 2s ease-in-out infinite;'></i>
+            <h3 style='margin: 0; display: inline;'>AI-Powered Clinical Analysis in Progress</h3>
+            <i class="fas fa-sparkles" style='color: #3b82f6; font-size: 1.5rem; animation: sparkle 2s ease-in-out infinite 0.5s;'></i>
+        </div>
+        <style>
+        @keyframes sparkle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        st.markdown("<p style='color: #64748b; margin-bottom: 1.5rem;'>The AI assistant is reviewing patient information and generating clinical insights.</p>", unsafe_allow_html=True)
         
-        # Progress components
-        progress_bar_container = st.empty()
-        status_line_container = st.empty()  # Single line that updates in place
-        progress_details_container = st.empty()
+        # Progress display container
+        progress_display_container = st.empty()
         
         logs = []
-        total_steps = 8  # Estimate total steps
         
-        # Use dict to store mutable counter (avoids nonlocal issues)
-        progress_tracker = {'current_step': 0}
+        # Track all steps by their key
+        step_states = {}  # key -> state (pending, active, completed, failed, skipped)
+        
+        # Initialize all steps as pending
+        for step_key in STEP_DEFINITIONS.keys():
+            step_states[step_key] = 'pending'
+        
+        # Initial render to show all pending steps
+        def render_all_steps():
+            phase_1_steps = []
+            phase_2_steps = []
+            phase_3_steps = []
+            
+            phase_1_completed = 0
+            phase_2_completed = 0
+            phase_3_completed = 0
+            
+            # Group steps by phase, maintaining order
+            phase_1_items = []
+            phase_2_items = []
+            phase_3_items = []
+            
+            for step_key, step_def in STEP_DEFINITIONS.items():
+                state = step_states.get(step_key, 'pending')
+                
+                # Skip rendering steps that are still pending (not started, not completed, not skipped)
+                # Only show steps that have been processed (active, completed, failed, or skipped)
+                if state == 'pending':
+                    # Check if any step in this phase has been processed
+                    phase = step_def['phase']
+                    phase_has_activity = False
+                    for other_key, other_def in STEP_DEFINITIONS.items():
+                        if other_def['phase'] == phase:
+                            other_state = step_states.get(other_key, 'pending')
+                            if other_state != 'pending':
+                                phase_has_activity = True
+                                break
+                    
+                    # If phase has no activity yet, skip rendering this step
+                    if not phase_has_activity:
+                        continue
+                
+                step_def_copy = step_def.copy()
+                step_def_copy['status'] = state
+                
+                card_html = render_step_card(step_def_copy, state)
+                order = step_def.get('order', 999)
+                
+                if step_def['phase'] == 1:
+                    phase_1_items.append((order, card_html, state))
+                    if state == 'completed':
+                        phase_1_completed += 1
+                elif step_def['phase'] == 2:
+                    phase_2_items.append((order, card_html, state))
+                    if state == 'completed':
+                        phase_2_completed += 1
+                elif step_def['phase'] == 3:
+                    phase_3_items.append((order, card_html, state))
+                    if state == 'completed':
+                        phase_3_completed += 1
+            
+            # Sort by order and extract HTML
+            phase_1_steps = [html for _, html, _ in sorted(phase_1_items)]
+            phase_2_steps = [html for _, html, _ in sorted(phase_2_items)]
+            phase_3_steps = [html for _, html, _ in sorted(phase_3_items)]
+            
+            # Render phase groups (only show phases that have activity and aren't all skipped)
+            html_parts = []
+            
+            # Check if phases should be shown
+            def phase_should_show(phase_num):
+                """Check if phase should be displayed - show if has activity or at least one step processed"""
+                phase_steps = [k for k, v in STEP_DEFINITIONS.items() if v['phase'] == phase_num]
+                if not phase_steps:
+                    return False
+                
+                # Get all states for this phase
+                states = [step_states.get(k, 'pending') for k in phase_steps]
+                
+                # Hide if all steps are skipped (entire phase skipped)
+                if all(s == 'skipped' for s in states):
+                    return False
+                
+                # Show if any step is active, completed, failed, or skipped (has been processed)
+                if any(s in ['active', 'completed', 'failed', 'skipped'] for s in states):
+                    return True
+                
+                # Hide if all are still pending (phase hasn't started)
+                return False
+            
+            phase_1_has_activity = phase_should_show(1)
+            phase_2_has_activity = phase_should_show(2)
+            phase_3_has_activity = phase_should_show(3)
+            
+            if phase_1_steps and phase_1_has_activity:
+                html_parts.append(render_phase_group(1, 'Gathering Information', phase_1_steps, phase_1_completed))
+            
+            if phase_2_steps and phase_2_has_activity:
+                html_parts.append(render_phase_group(2, 'Safety Analysis', phase_2_steps, phase_2_completed))
+            
+            if phase_3_steps and phase_3_has_activity:
+                html_parts.append(render_phase_group(3, 'Clinical Analysis', phase_3_steps, phase_3_completed))
+            
+            return '\n'.join(html_parts)
+        
+        # Show initial state
+        try:
+            import streamlit.components.v1 as components
+            progress_display_container.markdown(render_all_steps(), unsafe_allow_html=True)
+        except:
+            progress_display_container.markdown(render_all_steps(), unsafe_allow_html=True)
         
         def emit(message):
-            """Callback to update progress - single line updates in place."""
+            """Callback to update progress with modern step cards."""
             logs.append({'message': message, 'timestamp': datetime.now()})
             
-            # Update step counter
-            if "COMPLETED" in message or "SKIPPED" in message:
-                progress_tracker['current_step'] += 1
+            # Translate message to step info
+            step_info = translate_step_message(message)
             
-            # Calculate progress percentage
-            progress_percent = min(int((progress_tracker['current_step'] / total_steps) * 100), 100)
+            # Debug: Print message if it's not recognized (for troubleshooting)
+            # if not step_info and any(keyword in message.upper() for keyword in ['FETCH', 'TOOL', 'COMPLETED', 'STARTED', 'SKIPPED']):
+            #     print(f"Unrecognized message: {message}")
             
-            # Update progress bar
-            progress_bar_container.progress(progress_percent, text=f"Progress: {progress_percent}%")
+            if step_info:
+                # Extract step key from the translated step info
+                step_key = None
+                message_upper = message.upper()
+                
+                # Map tool names to step keys
+                tool_name_to_step_key = {
+                    'GET_EHR': 'FETCH_EHR',
+                    'GET_LABS': 'FETCH_LABS',
+                    'GET_MEDS': 'FETCH_MEDS',
+                    'GET_IMAGING': 'FETCH_IMAGING',
+                    'QUERY_DDI': 'CHECK_DDI',
+                    'SEARCH_GUIDELINES': 'SEARCH_GUIDELINES',
+                    'EHR': 'FETCH_EHR',
+                    'LABS': 'FETCH_LABS',
+                    'MEDS': 'FETCH_MEDS',
+                    'IMAGING': 'FETCH_IMAGING',
+                    'DDI': 'CHECK_DDI',
+                    'GUIDELINES': 'SEARCH_GUIDELINES'
+                }
+                
+                # Try direct match first
+                for key in STEP_DEFINITIONS.keys():
+                    if key in message_upper:
+                        step_key = key
+                        break
+                
+                # Try tool name mapping (check for tool names in message)
+                if not step_key:
+                    # Check if message contains a tool name (e.g., "EXECUTING_TOOL: get_ehr" or "TOOL_COMPLETED: get_ehr")
+                    for tool_name, mapped_key in tool_name_to_step_key.items():
+                        # Check if tool name appears in the message (handle both "get_ehr" and "GET_EHR")
+                        if tool_name in message_upper or tool_name.lower() in message.lower():
+                            step_key = mapped_key
+                            break
+                    
+                    # Also check for tool names directly (e.g., "get_ehr" -> "GET_EHR")
+                    if not step_key:
+                        # Extract tool name from messages like "EXECUTING_TOOL: get_ehr"
+                        if ':' in message:
+                            tool_part = message.split(':')[-1].strip().upper()
+                            # Map common tool name variations
+                            tool_variations = {
+                                'GET_EHR': 'FETCH_EHR',
+                                'GET_LABS': 'FETCH_LABS',
+                                'GET_MEDS': 'FETCH_MEDS',
+                                'GET_IMAGING': 'FETCH_IMAGING',
+                                'QUERY_DDI': 'CHECK_DDI',
+                                'SEARCH_GUIDELINES': 'SEARCH_GUIDELINES'
+                            }
+                            if tool_part in tool_variations:
+                                step_key = tool_variations[tool_part]
+                
+                # Handle special cases
+                if not step_key:
+                    if 'REASONING' in message_upper:
+                        step_key = 'REASONING'
+                    elif 'SYNTHESIS' in message_upper:
+                        step_key = 'SYNTHESIS'
+                    elif 'SAFETY' in message_upper and 'CHECK' in message_upper:
+                        step_key = 'SAFETY_CHECK'
+                
+                if step_key:
+                    # Update step state based on message
+                    if 'COMPLETED' in message_upper or 'TOOL_COMPLETED' in message_upper:
+                        # Mark this step as completed
+                        step_states[step_key] = 'completed'
+                        # When a step completes, ensure any previously active step is also marked completed
+                        for other_key in step_states:
+                            if other_key != step_key and step_states[other_key] == 'active':
+                                step_states[other_key] = 'completed'
+                    elif 'FAILED' in message_upper or 'ERROR' in message_upper or 'TOOL_ERROR' in message_upper:
+                        step_states[step_key] = 'failed'
+                    elif 'SKIPPED' in message_upper:
+                        step_states[step_key] = 'skipped'
+                    elif 'STARTED' in message_upper or 'EXECUTING' in message_upper or 'REASONING' in message_upper:
+                        # When a new step starts, mark previous active as completed
+                        for other_key in step_states:
+                            if other_key != step_key and step_states[other_key] == 'active':
+                                step_states[other_key] = 'completed'
+                        step_states[step_key] = 'active'
+                    # Also handle implicit completion - if we see a new step starting and this one was active
+                    # (This handles cases where COMPLETED message might be missing)
             
-            # Choose icon and styling based on message
-            msg = message
-            if "STARTED" in msg:
-                status_icon = "⏳"
-                status_color = "#3b82f6"
-            elif "COMPLETED" in msg:
-                status_icon = "✅"
-                status_color = "#22c55e"
-            elif "FAILED" in msg or "ERROR" in msg:
-                status_icon = "❌"
-                status_color = "#ef4444"
-            elif "SKIPPED" in msg:
-                status_icon = "➖"
-                status_color = "#94a3b8"
-            else:
-                status_icon = "▪️"
-                status_color = "#6366f1"
+            # Add 0.5 second delay between step transitions for better UX
+            import time
+            time.sleep(0.5)
             
-            # Update the SINGLE status line (this updates in place, not a new line)
-            status_line_container.markdown(
-                f"**{status_icon} Step {progress_tracker['current_step']}/{total_steps}:** {msg}",
-                unsafe_allow_html=False
-            )
-            
-            # Show detailed log (collapsible, below the updating line)
-            if len(logs) > 1:
-                with progress_details_container.expander("📋 View detailed execution log", expanded=False):
-                    for log in logs:
-                        msg_text = log['message']
-                        time_str = log['timestamp'].strftime("%H:%M:%S")
-                        
-                        if "COMPLETED" in msg_text:
-                            st.success(f"{time_str} - {msg_text}")
-                        elif "FAILED" in msg_text or "ERROR" in msg_text:
-                            st.error(f"{time_str} - {msg_text}")
-                        elif "SKIPPED" in msg_text:
-                            st.info(f"{time_str} - {msg_text}")
-                        else:
-                            st.write(f"{time_str} - {msg_text}")
+            # Update display using the render function
+            progress_display_container.markdown(render_all_steps(), unsafe_allow_html=True)
         
         # Run the agent
         with st.spinner("Analyzing clinical data..."):
