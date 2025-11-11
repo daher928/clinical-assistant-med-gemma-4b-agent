@@ -8,6 +8,7 @@ import streamlit as st
 import sys
 import os
 import json
+import base64
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
@@ -867,8 +868,15 @@ st.markdown("""
 # HEADER & BRANDING
 # ============================================================================
 
+# Encode sparkle icon image
+sparkle_icon_path = os.path.join(os.path.dirname(__file__), 'sparkle-icon.png')
+sparkle_icon_base64 = ""
+if os.path.exists(sparkle_icon_path):
+    with open(sparkle_icon_path, 'rb') as img_file:
+        sparkle_icon_base64 = base64.b64encode(img_file.read()).decode()
+
 # Professional header with clean layout
-st.markdown("""
+st.markdown(f"""
 <div style='background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
             padding: 2rem 2.5rem; border-radius: 20px; margin-bottom: 2rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);'>
@@ -880,8 +888,13 @@ st.markdown("""
                 ⚕️ Clinical Decision Support
                 <i class="fas fa-sparkles" style='position: absolute; top: 0; right: 0; color: #60a5fa; font-size: 1.1rem; animation: sparkle 2s ease-in-out infinite;'></i>
             </h1>
-            <p style='margin: 0.5rem 0 0 0; color: #94a3b8; font-size: 1rem; font-weight: 500;'>
-                AI-Powered Clinical Intelligence • Powered by MedGemma
+            <p style='margin: 0.5rem 0 0 0; color: #94a3b8; font-size: 1rem; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;'>
+                AI-Powered Clinical Intelligence • Powered by 
+                <span style='position: relative; display: inline-flex; align-items: center; gap: 0.4rem;'>
+                    <img src="data:image/png;base64,{sparkle_icon_base64}" style='width: 20px; height: 20px; filter: brightness(0) saturate(100%) invert(85%) sepia(100%) saturate(2000%) hue-rotate(15deg) brightness(1.1) contrast(1.2);' />
+                    MedGemma
+                    <img src="data:image/png;base64,{sparkle_icon_base64}" style='width: 20px; height: 20px; filter: brightness(0) saturate(100%) invert(85%) sepia(100%) saturate(2000%) hue-rotate(15deg) brightness(1.1) contrast(1.2);' />
+                </span>
             </p>
         </div>
         <div style='text-align: right;'>
