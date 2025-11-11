@@ -9,9 +9,15 @@ import sys
 import os
 import json
 import base64
+import tempfile
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
+from audio_recorder_streamlit import audio_recorder
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -951,6 +957,55 @@ with st.sidebar:
     st.caption("Version 2.0 - Hybrid Intelligent Mode")
 
 # ============================================================================
+# AUDIO TRANSCRIPTION UTILITIES
+# ============================================================================
+
+def transcribe_audio_with_gemini(audio_bytes, mime_type="audio/wav"):
+    """
+    Transcribe audio using Gemini API.
+    
+    Args:
+        audio_bytes: Audio data as bytes
+        mime_type: MIME type of the audio (default: audio/wav)
+    
+    Returns:
+        Transcribed text string, or None if transcription fails
+    """
+    try:
+        # Check if API key is configured
+        if not Config.GEMINI_API_KEY:
+            return None
+        
+        # Import Gemini client
+        from google import genai
+        from google.genai import types
+        
+        # Initialize client with API key
+        client = genai.Client(api_key=Config.GEMINI_API_KEY)
+        
+        # Use inline audio data approach (for files < 20MB)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[
+                'Generate a transcript of the speech.',
+                types.Part.from_bytes(
+                    data=audio_bytes,
+                    mime_type=mime_type,
+                )
+            ]
+        )
+        
+        # Extract transcribed text
+        if response and hasattr(response, 'text'):
+            return response.text.strip()
+        else:
+            return None
+            
+    except Exception as e:
+        st.error(f"Transcription error: {str(e)}")
+        return None
+
+# ============================================================================
 # PATIENT SELECTION DASHBOARD
 # ============================================================================
 
@@ -1577,20 +1632,72 @@ st.markdown(f"""
 st.markdown("")
 
 # Clinical complaint section
-col_title, col_audio_icon = st.columns([10, 1])
-with col_title:
-    st.markdown("### 📝 Chief Complaint")
-with col_audio_icon:
-    if st.button("🎤", help="Audio recording (coming soon)", key="audio_placeholder"):
-        st.info("🎙️ Audio recording feature coming soon!")
+st.markdown("### 📝 Chief Complaint")
+
+# Initialize session state for complaint text if not exists or patient changed
+if 'complaint_text' not in st.session_state or st.session_state.get('last_patient_id') != patient_id:
+    st.session_state.complaint_text = selected_patient_data['default_complaint']
+    st.session_state.last_patient_id = patient_id
+
+# Audio recording section with modern design
+col_title_audio, col_recorder = st.columns([3, 1])
+with col_title_audio:
+    st.markdown('<p style="margin-bottom: 0.5rem; color: #64748b; font-size: 0.9rem;">Record audio complaint</p>', unsafe_allow_html=True)
+with col_recorder:
+    audio = audio_recorder("Record", "Stop", icon_name="microphone", icon_size="2x", 
+                          neutral_color="#3b82f6", recording_color="#ef4444")
+
+# Handle audio recording and transcription
+if audio is not None and len(audio) > 0:
+    # audio_recorder returns bytes directly
+    audio_bytes = audio if isinstance(audio, bytes) else bytes(audio)
+    
+    # Check if this is a new recording (not already transcribed)
+    audio_hash = hash(audio_bytes[:100]) if len(audio_bytes) > 100 else hash(audio_bytes)
+    
+    if st.session_state.get('last_audio_hash') != audio_hash:
+        # Show recording status
+        st.info("🎙️ Recording captured. Transcribing...")
+        
+        # Process audio transcription
+        try:
+            # Transcribe using Gemini (audio is already in bytes format)
+            transcribed_text = transcribe_audio_with_gemini(audio_bytes, mime_type="audio/wav")
+            
+            if transcribed_text:
+                # Replace (overwrite) the complaint text with transcribed text
+                st.session_state.complaint_text = transcribed_text
+                
+                # Show success message
+                st.success(f"✅ Transcribed: {transcribed_text[:50]}...")
+                
+                # Store audio hash to prevent re-transcription
+                st.session_state.last_audio_hash = audio_hash
+            else:
+                # Show error if transcription failed
+                if not Config.GEMINI_API_KEY:
+                    st.warning("⚠️ GEMINI_API_KEY not configured. Please set it in your environment variables.")
+                else:
+                    st.error("❌ Transcription failed. Please try again.")
+        except Exception as e:
+            st.error(f"❌ Error processing audio: {str(e)}")
+    
+    # Display audio playback if available (audio is already bytes) - in collapsible section
+    with st.expander("🎵 Playback recorded audio", expanded=False):
+        st.audio(audio_bytes, format="audio/wav")
 
 complaint = st.text_area(
     "Enter clinical complaint or reason for consultation",
-    value=selected_patient_data['default_complaint'],
+    value=st.session_state.complaint_text,
     height=100,
     label_visibility="collapsed",
-    help="Describe current symptoms, duration, and relevant context"
+    help="Describe current symptoms, duration, and relevant context",
+    key="complaint_input"
 )
+
+# Update session state when user manually edits the text
+if complaint != st.session_state.complaint_text:
+    st.session_state.complaint_text = complaint
 
 # ============================================================================
 # ACTION PANEL

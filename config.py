@@ -12,6 +12,9 @@ class Config:
     MODEL_ID = os.getenv("MODEL_ID", "google/medgemma-4b-it")
     USE_MOCK_LLM = os.getenv("USE_MOCK_LLM", "false").lower() == "true"
     
+    # Gemini API for audio transcription
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    
     # Device detection
     @staticmethod
     def get_device():
