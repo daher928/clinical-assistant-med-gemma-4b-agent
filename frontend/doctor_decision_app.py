@@ -204,7 +204,7 @@ def initialize_session_state():
 def load_patient_database():
     """Load patient database"""
     try:
-        with open('patient_database.json', 'r') as f:
+        with open('demo_data/patient_database.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
         return {"patients": []}
@@ -213,7 +213,7 @@ def load_patient_data(patient_id=None):
     """Load patient data from the database"""
     if patient_id:
         try:
-            with open('patient_database.json', 'r') as f:
+            with open('demo_data/patient_database.json', 'r') as f:
                 database = json.load(f)
                 for patient in database.get('patients', []):
                     if patient['patient_id'] == patient_id:
@@ -223,7 +223,7 @@ def load_patient_data(patient_id=None):
     
     # Fallback to old patient_data.json for backward compatibility
     try:
-        with open('patient_data.json', 'r') as f:
+        with open('demo_data/patient_data.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
         return {
@@ -238,7 +238,7 @@ def load_patient_data(patient_id=None):
 
 def save_patient_data(patient_data):
     """Save patient data to file"""
-    with open('patient_data.json', 'w') as f:
+    with open('demo_data/patient_data.json', 'w') as f:
         json.dump(patient_data, f, indent=2)
 
 def run_safety_check(doctor_decision, patient_data):

@@ -696,11 +696,11 @@ with st.sidebar:
 def load_patient_database():
     """Load patient database from JSON file"""
     try:
-        with open('patient_database.json', 'r') as f:
+        with open('demo_data/patient_database.json', 'r') as f:
             database = json.load(f)
             return database.get('patients', [])
     except FileNotFoundError:
-        st.error("⚠️ patient_database.json not found. Using fallback data.")
+        st.error("⚠️ demo_data/patient_database.json not found. Using fallback data.")
         return []
 
 # Transform database format to frontend format
