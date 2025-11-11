@@ -1,0 +1,14 @@
+{
+  "patient_id": "P007",
+  "studies": [
+    {
+      "type": "Chest X-Ray",
+      "date": "2025-10-15",
+      "findings": "New right lower lobe airspace opacity with mild bronchial wall thickening. No pleural effusion. Cardiomediastinal silhouette normal.",
+      "impression": "Findings consistent with a new chest infection (pneumonia) in the right lower lobe.",
+      "radiologist": "Dr. Chen"
+    }
+  ]
+}
+
+

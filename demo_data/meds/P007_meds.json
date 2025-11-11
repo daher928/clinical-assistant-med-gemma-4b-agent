@@ -1,0 +1,51 @@
+{
+  "patient_id": "P007",
+  "active": [
+    {
+      "name": "Apixaban",
+      "dose": "5mg",
+      "frequency": "twice daily",
+      "route": "oral",
+      "indication": "Atrial fibrillation (blood thinner)",
+      "start_date": "2019-01-10",
+      "prescriber": "Dr. Lee"
+    },
+    {
+      "name": "Lisinopril",
+      "dose": "10mg",
+      "frequency": "once daily",
+      "route": "oral",
+      "indication": "Hypertension, CKD protection (pressure pill)",
+      "start_date": "2013-01-15",
+      "prescriber": "Dr. Lee"
+    },
+    {
+      "name": "Metformin",
+      "dose": "500mg",
+      "frequency": "twice daily",
+      "route": "oral",
+      "indication": "Type 2 Diabetes (sugar pill)",
+      "start_date": "2015-04-22",
+      "prescriber": "Dr. Lee",
+      "note": "eGFR >45, safe to continue"
+    },
+    {
+      "name": "Atorvastatin",
+      "dose": "20mg",
+      "frequency": "once daily at bedtime",
+      "route": "oral",
+      "indication": "Hyperlipidemia",
+      "start_date": "2016-03-10",
+      "prescriber": "Dr. Lee"
+    }
+  ],
+  "discontinued": [
+    {
+      "name": "Ibuprofen",
+      "reason": "Avoid in CKD (kidney problem) due to risk",
+      "discontinuation_date": "2020-08-20"
+    }
+  ]
+}
+
+

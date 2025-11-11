@@ -1,0 +1,69 @@
+{
+  "patient_id": "P006",
+  "demographics": {
+    "name": "Omar",
+    "age": 72,
+    "gender": "Male",
+    "dob": "1952-03-18"
+  },
+  "conditions": [
+    {
+      "name": "Chronic Kidney Disease Stage 3a",
+      "icd10": "N18.30",
+      "onset": "2020-08-15",
+      "status": "active"
+    },
+    {
+      "name": "Type 2 Diabetes Mellitus",
+      "icd10": "E11.9",
+      "onset": "2015-04-22",
+      "status": "active"
+    },
+    {
+      "name": "Essential Hypertension",
+      "icd10": "I10",
+      "onset": "2012-11-10",
+      "status": "active"
+    },
+    {
+      "name": "Osteoarthritis of knee",
+      "icd10": "M17.11",
+      "onset": "2018-06-05",
+      "status": "active"
+    },
+    {
+      "name": "Osteoarthritis of hip",
+      "icd10": "M16.11",
+      "onset": "2019-09-12",
+      "status": "active"
+    },
+    {
+      "name": "Hyperlipidemia",
+      "icd10": "E78.5",
+      "onset": "2014-02-18",
+      "status": "active"
+    }
+  ],
+  "allergies": [
+    {
+      "allergen": "None known",
+      "reaction": "N/A",
+      "severity": "N/A"
+    }
+  ],
+  "vitals": {
+    "last_visit": "2025-10-15",
+    "bp": "142/88 mmHg",
+    "hr": "82 bpm",
+    "temp": "98.3°F",
+    "weight": "178 lbs",
+    "height": "5'9\"",
+    "bmi": 26.3
+  },
+  "social_history": {
+    "smoking": "Former smoker (quit 2010, 20 pack-years)",
+    "alcohol": "Occasional (1-2 drinks/week)",
+    "exercise": "Sedentary due to joint pain"
+  }
+}
+

@@ -7,7 +7,7 @@ error handling and dynamic decision making.
 import json
 import re
 from typing import Callable, Dict, Optional
-from tools import ehr, labs, meds, imaging, ddi, guidelines
+from tools import ehr, labs, meds, imaging, ddi, guidelines, safety_checker
 from llm.med_gemma_wrapper import MedGemmaLLM
 from config import Config
 
@@ -49,7 +49,7 @@ def run_agent_hybrid(patient_id: str, complaint: str, emit: Callable[[str], None
     """
     HYBRID MODE: Intelligent routing to best autonomy level.
     
-    TEMPORARILY DISABLED - Using standard Level 1 mode until ReAct is debugged.
+    Now includes multi-agent system for data insights.
     
     Args:
         patient_id: Patient identifier
@@ -59,9 +59,9 @@ def run_agent_hybrid(patient_id: str, complaint: str, emit: Callable[[str], None
     Returns:
         Clinical summary
     """
-    # TEMPORARY: Skip complex routing, use working Level 1
-    emit("USING_STANDARD_MODE (Level 1 - Fast & Reliable)")
-    return run_agent_standard(patient_id, complaint, emit)
+    # Use multi-agent system for comprehensive analysis
+    emit("USING_MULTI_AGENT_MODE (Level 5 - Comprehensive Analysis)")
+    return run_agent_multi_agent(patient_id, complaint, emit)
 
 
 def run_agent_standard(patient_id: str, complaint: str, emit: Callable[[str], None]) -> str:
@@ -247,6 +247,74 @@ def _run_agent_level1(patient_id: str, complaint: str, emit: Callable[[str], Non
         return f"❌ Error during synthesis: {str(e)}\n\nObservations collected:\n{observations}", observations
 
 
+def run_agent_multi_agent(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
+    """
+    MULTI-AGENT MODE: Level 5 autonomy with specialized agents.
+    
+    Uses CoordinatorAgent to orchestrate:
+    - DataGathererAgent: Efficient data collection
+    - AnalyzerAgent: Pattern/trend recognition and data insights
+    - RiskAssessmentAgent: Safety and contraindications
+    - GuidelineAgent: Evidence-based matching
+    
+    Args:
+        patient_id: Patient identifier
+        complaint: Clinical complaint
+        emit: Progress callback
+        
+    Returns:
+        Tuple of (clinical_summary, observations_with_insights)
+    """
+    try:
+        from agent.multi_agent_system import CoordinatorAgent
+        from llm.med_gemma_wrapper import MedGemmaLLM
+        
+        # Initialize tools
+        tools = {
+            'ehr': ehr.get_ehr,
+            'labs': labs.get_labs,
+            'meds': meds.get_meds,
+            'imaging': imaging.get_imaging,
+            'ddi': ddi.query_ddi,
+            'guidelines': guidelines.search_guidelines
+        }
+        
+        # Initialize LLM
+        llm = MedGemmaLLM()
+        
+        # Initialize coordinator
+        coordinator = CoordinatorAgent('Coordinator', tools, llm)
+        
+        # Run multi-agent analysis
+        result = coordinator.run(patient_id, complaint, emit)
+        
+        # Extract summary and agent insights
+        summary = result['summary']
+        agent_insights = result['agent_insights']
+        
+        # Build enriched observations for frontend
+        observations = {
+            'EHR': agent_insights['gatherer']['data_collected'].get('EHR', {}),
+            'LABS': agent_insights['gatherer']['data_collected'].get('LABS', {}),
+            'MEDS': agent_insights['gatherer']['data_collected'].get('MEDS', {}),
+            'IMAGING': agent_insights['gatherer']['data_collected'].get('IMAGING', {}),
+            'DDI': agent_insights['gatherer']['data_collected'].get('DDI', []),
+            'GUIDE': agent_insights['gatherer']['data_collected'].get('GUIDE', []),
+            # Add agent insights for data insights tab
+            'ANALYSIS': agent_insights['analyzer'],
+            'RISKS': agent_insights['risk'],
+            'GUIDELINES': agent_insights['guideline']
+        }
+        
+        return summary, observations
+        
+    except Exception as e:
+        emit(f"MULTI_AGENT_FAILED: {str(e)}")
+        # Fallback to standard mode
+        emit("FALLING_BACK_TO_STANDARD_MODE")
+        return run_agent_standard(patient_id, complaint, emit)
+
+
 class ClinicalAssistantOrchestrator:
     """
     Alternative orchestrator class for more complex workflows.
@@ -289,6 +357,53 @@ class ClinicalAssistantOrchestrator:
                 progress_callback(msg)
         
         return run_agent_hybrid(patient_id, complaint, emit)
+
+
+def run_safety_monitor(patient_id: str, doctor_decision: Dict, patient_context: Dict, emit: Callable[[str], None]) -> Dict:
+    """
+    Run safety monitor on doctor's treatment decisions.
+    
+    Args:
+        patient_id: Patient identifier
+        doctor_decision: Doctor's treatment plan with prescriptions
+        patient_context: Full patient data from diagnostic workflow
+        emit: Progress callback
+        
+    Returns:
+        Safety analysis results
+    """
+    try:
+        from agent.safety_monitor import SafetyMonitorAgent
+        
+        # Initialize tools for safety monitor
+        tools = {
+            'ehr': ehr.get_ehr,
+            'labs': labs.get_labs,
+            'meds': meds.get_meds,
+            'imaging': imaging.get_imaging,
+            'ddi': ddi.query_ddi,
+            'guidelines': guidelines.search_guidelines,
+            'safety_checker': safety_checker.check_drug_safety
+        }
+        
+        # Initialize LLM
+        llm = MedGemmaLLM()
+        
+        # Initialize safety monitor
+        safety_monitor = SafetyMonitorAgent(tools, llm)
+        
+        # Run safety analysis
+        safety_result = safety_monitor.run(patient_id, doctor_decision, patient_context, emit)
+        
+        return safety_result
+        
+    except Exception as e:
+        emit(f"SAFETY_MONITOR_ERROR: {str(e)}")
+        return {
+            'status': 'error',
+            'warnings': [],
+            'summary': f'Safety monitor failed: {str(e)}'
+        }
 
 
 # Alias for backward compatibility

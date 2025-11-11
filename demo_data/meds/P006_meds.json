@@ -1,0 +1,56 @@
+{
+  "patient_id": "P006",
+  "active": [
+    {
+      "name": "Lisinopril",
+      "dose": "10mg",
+      "frequency": "once daily",
+      "route": "oral",
+      "indication": "Hypertension, CKD protection",
+      "start_date": "2020-09-01",
+      "prescriber": "Dr. Smith"
+    },
+    {
+      "name": "Metformin",
+      "dose": "500mg",
+      "frequency": "twice daily",
+      "route": "oral",
+      "indication": "Type 2 Diabetes",
+      "start_date": "2015-05-15",
+      "prescriber": "Dr. Smith",
+      "note": "eGFR >45, safe to continue"
+    },
+    {
+      "name": "Atorvastatin",
+      "dose": "20mg",
+      "frequency": "once daily at bedtime",
+      "route": "oral",
+      "indication": "Hyperlipidemia",
+      "start_date": "2014-03-10",
+      "prescriber": "Dr. Smith"
+    },
+    {
+      "name": "Acetaminophen",
+      "dose": "500mg",
+      "frequency": "as needed for pain (max 3g/day)",
+      "route": "oral",
+      "indication": "Joint pain - osteoarthritis",
+      "start_date": "2019-07-20",
+      "prescriber": "Dr. Smith",
+      "note": "Preferred over NSAIDs due to CKD"
+    }
+  ],
+  "discontinued": [
+    {
+      "name": "Ibuprofen",
+      "reason": "Contraindicated in CKD - discontinued 2020-08-20",
+      "discontinuation_date": "2020-08-20"
+    },
+    {
+      "name": "Naproxen",
+      "reason": "Contraindicated in CKD - discontinued 2020-08-20",
+      "discontinuation_date": "2020-08-20"
+    }
+  ]
+}
+

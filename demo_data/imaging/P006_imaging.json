@@ -1,0 +1,27 @@
+{
+  "patient_id": "P006",
+  "studies": [
+    {
+      "type": "Bilateral Knee X-Ray",
+      "date": "2025-10-10",
+      "findings": "Bilateral knee osteoarthritis with moderate joint space narrowing, osteophyte formation, and subchondral sclerosis. Right knee shows more advanced changes than left. No acute fractures or dislocations.",
+      "impression": "Moderate to severe bilateral knee osteoarthritis, right greater than left",
+      "radiologist": "Dr. Chen"
+    },
+    {
+      "type": "Right Hip X-Ray",
+      "date": "2025-10-10",
+      "findings": "Right hip shows mild to moderate osteoarthritis with joint space narrowing and small osteophytes. Left hip appears relatively preserved. No evidence of avascular necrosis or fractures.",
+      "impression": "Mild to moderate right hip osteoarthritis",
+      "radiologist": "Dr. Chen"
+    },
+    {
+      "type": "Renal Ultrasound",
+      "date": "2025-09-20",
+      "findings": "Both kidneys show slightly reduced size (right kidney 9.8 cm, left kidney 10.1 cm). Mildly increased cortical echogenicity bilaterally consistent with chronic kidney disease. No hydronephrosis, masses, or calculi identified. Renal arteries appear patent.",
+      "impression": "Bilateral chronic kidney disease, consistent with Stage 3a CKD",
+      "radiologist": "Dr. Lee"
+    }
+  ]
+}
+
