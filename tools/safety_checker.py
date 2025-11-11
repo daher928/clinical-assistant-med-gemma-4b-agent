@@ -124,8 +124,31 @@ def get_drug_contraindications(drug_name: str) -> List[Dict]:
     Returns:
         List of contraindication dictionaries
     """
-    # This would ideally come from a comprehensive drug database
-    # For now, using a simplified lookup
+    # Try to load from comprehensive drug database first
+    try:
+        import json
+        import os
+        from config import Config
+        
+        db_path = os.path.join(Config.DRUGS_DIR, "drug_database.json")
+        if os.path.exists(db_path):
+            with open(db_path, 'r') as f:
+                drug_db = json.load(f)
+                drugs = drug_db.get('drugs', {})
+                drug_lower = drug_name.lower()
+                
+                # Direct match
+                if drug_lower in drugs:
+                    return drugs[drug_lower].get('contraindications', [])
+                
+                # Partial match
+                for key, value in drugs.items():
+                    if key in drug_lower or drug_lower in key:
+                        return value.get('contraindications', [])
+    except Exception:
+        pass
+    
+    # Fallback to simplified lookup
     contraindications_db = {
         'metformin': [
             {

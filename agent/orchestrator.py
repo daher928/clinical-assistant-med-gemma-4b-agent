@@ -423,6 +423,13 @@ def run_safety_monitor(patient_id: str, doctor_decision: Dict, patient_context: 
             'safety_checker': safety_checker.check_drug_safety
         }
         
+        # Add pharmacology tool if available
+        try:
+            from tools import pharmacology
+            tools['pharmacology'] = pharmacology
+        except ImportError:
+            emit("PHARMACOLOGY_TOOL_NOT_AVAILABLE")
+        
         # Initialize LLM
         llm = MedGemmaLLM()
         

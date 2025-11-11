@@ -183,6 +183,156 @@ st.markdown("""
         70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
         100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
     }
+    
+    /* Progress Step Cards */
+    .step-card {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin: 0.75rem 0;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .step-card.active {
+        border-color: #3b82f6;
+        background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        animation: pulse-blue 2s ease-in-out infinite;
+    }
+    
+    .step-card.completed {
+        border-color: #22c55e;
+        background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+    }
+    
+    .step-card.failed {
+        border-color: #ef4444;
+        background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+    }
+    
+    .step-card.skipped {
+        border-color: #94a3b8;
+        background: #f8fafc;
+        opacity: 0.7;
+    }
+    
+    .step-icon {
+        font-size: 1.5rem;
+        width: 3rem;
+        height: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    
+    .step-card.active .step-icon {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        animation: icon-pulse 1.5s ease-in-out infinite;
+    }
+    
+    .step-card.completed .step-icon {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: white;
+    }
+    
+    .step-card.failed .step-icon {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+    }
+    
+    .step-card.skipped .step-icon {
+        background: #cbd5e1;
+        color: #64748b;
+    }
+    
+    .step-content {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .step-title {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+    }
+    
+    .step-description {
+        font-size: 0.875rem;
+        color: #64748b;
+        line-height: 1.4;
+    }
+    
+    .step-status {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .step-card.active .step-status {
+        background: #3b82f6;
+        color: white;
+    }
+    
+    .step-card.completed .step-status {
+        background: #22c55e;
+        color: white;
+    }
+    
+    .phase-group {
+        margin: 2rem 0;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .phase-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .phase-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    
+    .phase-progress {
+        font-size: 0.875rem;
+        color: #64748b;
+        font-weight: 500;
+    }
+    
+    @keyframes pulse-blue {
+        0%, 100% { box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15); }
+        50% { box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3); }
+    }
+    
+    @keyframes icon-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    @keyframes sparkle-icon {
+        0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        50% { opacity: 0.7; transform: scale(1.2) rotate(180deg); }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -241,106 +391,365 @@ def save_patient_data(patient_data):
     with open('demo_data/patient_data.json', 'w') as f:
         json.dump(patient_data, f, indent=2)
 
-def run_safety_check(doctor_decision, patient_data):
-    """Run safety check on prescriptions"""
-    # Simulate safety check
-    time.sleep(2)  # Simulate processing time
-    
-    warnings = []
-    alternatives = []
-    
-    # Get patient data
-    current_meds = patient_data.get('medications', [])
-    new_meds = [p['name'] for p in doctor_decision['prescriptions']]
-    conditions = patient_data.get('conditions', [])
-    allergies = patient_data.get('allergies', [])
-    labs = patient_data.get('labs', {})
-    
-    # DEMO SCENARIO: Ibuprofen + ACE inhibitor + Kidney Disease
-    for prescription in doctor_decision['prescriptions']:
-        drug_name = prescription['name'].lower()
-        
-        # Check for Ibuprofen (NSAID) with ACE inhibitor and kidney disease
-        if 'ibuprofen' in drug_name or 'nsaid' in drug_name:
-            # Check if patient is on ACE inhibitor
-            ace_inhibitor = any('lisinopril' in med.lower() or 'ace inhibitor' in med.lower() for med in current_meds)
-            kidney_disease = any('kidney' in condition.lower() or 'ckd' in condition.lower() for condition in conditions)
-            heart_failure = any('heart failure' in condition.lower() or 'chf' in condition.lower() for condition in conditions)
-            
-            if ace_inhibitor and (kidney_disease or heart_failure):
-                warnings.append({
-                    'drug_name': prescription['name'],
-                    'severity': 'high',
-                    'message': 'High-risk combination detected: Ibuprofen (NSAID) may worsen kidney function and heart failure in patients on ACE inhibitors',
-                    'recommendation': 'Recommend alternative pain relief such as Acetaminophen. Monitor kidney function closely if NSAID is necessary.',
-                    'category': 'Drug Interaction & Contraindication'
-                })
-                
-                # Add alternative suggestion
-                alternatives.append({
-                    'original_drug': prescription['name'],
-                    'alternative': 'Acetaminophen 500-1000mg every 6-8 hours',
-                    'reason': 'Safer for patients with kidney disease and heart failure'
-                })
-        
-        # Check for kidney function with NSAIDs
-        if 'ibuprofen' in drug_name or 'nsaid' in drug_name:
-            egfr = labs.get('eGFR', 0)
-            if egfr < 60:
-                warnings.append({
-                    'drug_name': prescription['name'],
-                    'severity': 'high',
-                    'message': f'Patient has reduced kidney function (eGFR: {egfr}). NSAIDs can further impair kidney function.',
-                    'recommendation': 'Consider alternative pain management. If NSAID necessary, use lowest effective dose and monitor kidney function.',
-                    'category': 'Kidney Function'
-                })
-        
-        # Check for heart failure with NSAIDs
-        if 'ibuprofen' in drug_name or 'nsaid' in drug_name:
-            if any('heart failure' in condition.lower() or 'chf' in condition.lower() for condition in conditions):
-                warnings.append({
-                    'drug_name': prescription['name'],
-                    'severity': 'high',
-                    'message': 'NSAIDs can worsen heart failure by causing fluid retention and reducing effectiveness of heart failure medications.',
-                    'recommendation': 'Avoid NSAIDs in heart failure patients. Consider Acetaminophen or topical pain relief.',
-                    'category': 'Heart Failure'
-                })
-    
-    # Check for allergies
-    for prescription in doctor_decision['prescriptions']:
-        drug_name = prescription['name'].lower()
-        for allergy in allergies:
-            if allergy.lower() in drug_name or drug_name in allergy.lower():
-                warnings.append({
-                    'drug_name': prescription['name'],
-                    'severity': 'critical',
-                    'message': f'Patient has allergy to {allergy}',
-                    'recommendation': 'DO NOT PRESCRIBE - Consider alternative',
-                    'category': 'Allergy'
-                })
-    
-    # Check for other contraindications
-    for prescription in doctor_decision['prescriptions']:
-        drug_name = prescription['name'].lower()
-        
-        # Check for Metformin in kidney disease
-        if 'metformin' in drug_name:
-            egfr = labs.get('eGFR', 0)
-            if egfr < 45:
-                warnings.append({
-                    'drug_name': prescription['name'],
-                    'severity': 'high',
-                    'message': f'Metformin contraindicated in severe kidney disease (eGFR: {egfr} < 45)',
-                    'recommendation': 'Consider alternative diabetes medication or reduce dose with close monitoring',
-                    'category': 'Contraindication'
-                })
-    
-    return {
-        'status': 'completed',
-        'warnings': warnings,
-        'alternatives': alternatives,
-        'summary': f'Safety analysis completed with {len(warnings)} warnings'
+# Safety Monitor Step Definitions
+SAFETY_STEP_DEFINITIONS = {
+    'SAFETY_MONITOR_STARTED': {
+        'title': 'Initializing Safety Monitor',
+        'icon': 'fa-shield-halved',
+        'description': 'Starting comprehensive safety analysis',
+        'phase': 1,
+        'phase_name': 'Initialization',
+        'order': 1
+    },
+    'SAFETY_CHECKING': {
+        'title': 'Checking Prescriptions',
+        'icon': 'fa-pills',
+        'description': 'Validating each prescription for safety',
+        'phase': 1,
+        'phase_name': 'Initialization',
+        'order': 2
+    },
+    'SAFETY_MONITOR_DDI_ANALYSIS': {
+        'title': 'Drug Interaction Analysis',
+        'icon': 'fa-exclamation-triangle',
+        'description': 'Checking for drug-drug interactions',
+        'phase': 2,
+        'phase_name': 'Safety Checks',
+        'order': 1
+    },
+    'SAFETY_MONITOR_CONTRAINDICATION_CHECK': {
+        'title': 'Contraindication Check',
+        'icon': 'fa-ban',
+        'description': 'Checking allergies and contraindications',
+        'phase': 2,
+        'phase_name': 'Safety Checks',
+        'order': 2
+    },
+    'SAFETY_MONITOR_DOSING_ANALYSIS': {
+        'title': 'Dosage Validation',
+        'icon': 'fa-calculator',
+        'description': 'Verifying appropriate dosing',
+        'phase': 2,
+        'phase_name': 'Safety Checks',
+        'order': 3
+    },
+    'SAFETY_MONITOR_GUIDELINES_CHECK': {
+        'title': 'Guidelines Review',
+        'icon': 'fa-book-medical',
+        'description': 'Checking clinical guidelines',
+        'phase': 2,
+        'phase_name': 'Safety Checks',
+        'order': 4
+    },
+    'SAFETY_MONITOR_PHARMACOLOGY_CHECK': {
+        'title': 'Pharmacology Analysis',
+        'icon': 'fa-flask',
+        'description': 'Reviewing drug mechanisms and interactions',
+        'phase': 2,
+        'phase_name': 'Safety Checks',
+        'order': 5
+    },
+    'SAFETY_MONITOR_EHR_HISTORY_CHECK': {
+        'title': 'Historical EHR Review',
+        'icon': 'fa-history',
+        'description': 'Analyzing patient history patterns',
+        'phase': 2,
+        'phase_name': 'Safety Checks',
+        'order': 6
+    },
+    'SAFETY_MONITOR_LLM_REASONING': {
+        'title': 'AI Safety Reasoning',
+        'icon': 'fa-brain',
+        'description': 'Using AI to analyze complex safety scenarios',
+        'phase': 3,
+        'phase_name': 'Intelligent Analysis',
+        'order': 1
+    },
+    'SAFETY_MONITOR_FINAL_ASSESSMENT': {
+        'title': 'Final Assessment',
+        'icon': 'fa-check-circle',
+        'description': 'Generating safety recommendations',
+        'phase': 3,
+        'phase_name': 'Intelligent Analysis',
+        'order': 2
+    },
+    'SAFETY_MONITOR_COMPLETED': {
+        'title': 'Safety Check Complete',
+        'icon': 'fa-check-double',
+        'description': 'All safety checks completed',
+        'phase': 3,
+        'phase_name': 'Intelligent Analysis',
+        'order': 3
     }
+}
+
+def render_safety_step_card(step_data: dict, state: str = None) -> str:
+    """Render a single safety step card with modern styling."""
+    import html
+    
+    status = state if state else step_data.get('status', 'pending')
+    title = html.escape(step_data.get('title', 'Unknown Step'))
+    description = html.escape(step_data.get('description', ''))
+    icon = step_data.get('icon', 'fa-circle')
+    
+    # Determine icon based on status
+    if status == 'active':
+        icon_html = f'<i class="fas {icon}"></i>'
+        status_text = 'In progress'
+    elif status == 'completed':
+        icon_html = '<i class="fas fa-check"></i>'
+        status_text = 'Complete'
+    elif status == 'failed':
+        icon_html = '<i class="fas fa-times"></i>'
+        status_text = 'Failed'
+    elif status == 'skipped':
+        icon_html = '<i class="fas fa-info-circle"></i>'
+        status_text = 'Not relevant'
+    else:  # pending
+        icon_html = f'<i class="fas {icon}"></i>'
+        status_text = ''
+    
+    # Add AI sparkle icon for active steps
+    ai_indicator = ''
+    if status == 'active':
+        ai_indicator = '<i class="fas fa-sparkles" style="position: absolute; top: -8px; right: -8px; color: #3b82f6; font-size: 0.875rem; animation: sparkle-icon 1.5s ease-in-out infinite;"></i>'
+    
+    status_div = f'<div class="step-status">{html.escape(status_text)}</div>' if status_text else ''
+    
+    html_output = f'<div class="step-card {status}" style="position: relative;"><div class="step-icon">{icon_html}</div>{ai_indicator}<div class="step-content"><div class="step-title">{title}</div><div class="step-description">{description}</div></div>{status_div}</div>'
+    
+    return html_output
+
+def render_safety_phase_group(phase_num: int, phase_name: str, steps: list, completed_count: int = 0) -> str:
+    """Render a phase group with header and step cards."""
+    import html
+    
+    total_steps = len(steps)
+    progress_text = f"{completed_count} of {total_steps} complete" if total_steps > 0 else ""
+    
+    phase_descriptions = {
+        1: "Initializing safety monitor and preparing prescription data",
+        2: "Running comprehensive safety checks on all prescriptions",
+        3: "Using AI to analyze complex scenarios and generate recommendations"
+    }
+    
+    description = phase_descriptions.get(phase_num, "")
+    steps_html = '\n'.join(steps)
+    description_html = f'<div style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.5rem;">{html.escape(description)}</div>' if description else ''
+    
+    html_output = f'<div class="phase-group"><div class="phase-header"><div class="phase-title" style="display: flex; align-items: center; gap: 0.5rem;"><i class="fas fa-sparkles" style="color: #3b82f6; font-size: 0.9rem;"></i>Phase {phase_num}: {html.escape(phase_name)}</div><div class="phase-progress">{html.escape(progress_text)}</div>{description_html}</div>{steps_html}</div>'
+    
+    return html_output
+
+def translate_safety_message(message: str) -> dict:
+    """Translate safety monitor messages to step information."""
+    message_upper = message.upper()
+    
+    # Map messages to step keys
+    for step_key in SAFETY_STEP_DEFINITIONS.keys():
+        if step_key in message_upper:
+            step_info = SAFETY_STEP_DEFINITIONS[step_key].copy()
+            
+            # Determine status
+            if 'STARTED' in message_upper or 'CHECKING' in message_upper:
+                step_info['status'] = 'active'
+            elif 'COMPLETED' in message_upper:
+                step_info['status'] = 'completed'
+            elif 'FAILED' in message_upper or 'ERROR' in message_upper:
+                step_info['status'] = 'failed'
+            else:
+                step_info['status'] = 'active'
+            
+            return step_info
+    
+    # Handle SAFETY_CHECKING_[drug_name] pattern
+    if 'SAFETY_CHECKING_' in message_upper:
+        step_info = SAFETY_STEP_DEFINITIONS['SAFETY_CHECKING'].copy()
+        step_info['status'] = 'active'
+        return step_info
+    
+    return None
+
+def render_safety_progress(container, states):
+    """Render safety monitor progress."""
+    phase_1_steps = []
+    phase_2_steps = []
+    phase_3_steps = []
+    
+    phase_1_completed = 0
+    phase_2_completed = 0
+    phase_3_completed = 0
+    
+    phase_1_items = []
+    phase_2_items = []
+    phase_3_items = []
+    
+    for step_key, step_def in SAFETY_STEP_DEFINITIONS.items():
+        state = states.get(step_key, 'pending')
+        
+        if state == 'pending':
+            phase = step_def['phase']
+            phase_has_activity = any(
+                states.get(k, 'pending') != 'pending' 
+                for k, v in SAFETY_STEP_DEFINITIONS.items() 
+                if v['phase'] == phase
+            )
+            if not phase_has_activity:
+                continue
+        
+        step_def_copy = step_def.copy()
+        step_def_copy['status'] = state
+        card_html = render_safety_step_card(step_def_copy, state)
+        order = step_def.get('order', 999)
+        
+        if step_def['phase'] == 1:
+            phase_1_items.append((order, card_html, state))
+            if state == 'completed':
+                phase_1_completed += 1
+        elif step_def['phase'] == 2:
+            phase_2_items.append((order, card_html, state))
+            if state == 'completed':
+                phase_2_completed += 1
+        elif step_def['phase'] == 3:
+            phase_3_items.append((order, card_html, state))
+            if state == 'completed':
+                phase_3_completed += 1
+    
+    phase_1_steps = [html_str for _, html_str, _ in sorted(phase_1_items)]
+    phase_2_steps = [html_str for _, html_str, _ in sorted(phase_2_items)]
+    phase_3_steps = [html_str for _, html_str, _ in sorted(phase_3_items)]
+    
+    html_parts = []
+    if phase_1_steps:
+        html_parts.append(render_safety_phase_group(1, 'Initialization', phase_1_steps, phase_1_completed))
+    if phase_2_steps:
+        html_parts.append(render_safety_phase_group(2, 'Safety Checks', phase_2_steps, phase_2_completed))
+    if phase_3_steps:
+        html_parts.append(render_safety_phase_group(3, 'Intelligent Analysis', phase_3_steps, phase_3_completed))
+    
+    container.markdown('\n'.join(html_parts), unsafe_allow_html=True)
+
+def run_safety_check(doctor_decision, patient_data, progress_container=None, step_states=None):
+    """Run safety check on prescriptions using the Safety Monitor Agent"""
+    import sys
+    import os
+    
+    # Add parent directory to path to import agent modules
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    
+    try:
+        from agent.orchestrator import run_safety_monitor
+        
+        # Extract patient_id from patient_data
+        patient_id = patient_data.get('patient_id', 'P001')
+        
+        # Convert patient_data format to patient_context format expected by agent
+        patient_context = {
+            'EHR': {
+                'demographics': patient_data.get('demographics', {}),
+                'conditions': [{'name': c} if isinstance(c, str) else c for c in patient_data.get('conditions', [])],
+                'allergies': [
+                    {'name': a, 'allergen': a} if isinstance(a, str) else a 
+                    for a in patient_data.get('allergies', [])
+                ]
+            },
+            'LABS': {
+                'results': [
+                    {'test': k, 'value': v, 'unit': ''} 
+                    for k, v in patient_data.get('labs', {}).items()
+                ]
+            },
+            'MEDS': {
+                'active': [
+                    {'name': m} if isinstance(m, str) else m 
+                    for m in patient_data.get('medications', [])
+                ]
+            }
+        }
+        
+        # Progress callback for emit
+        def emit(message):
+            if progress_container and step_states is not None:
+                # Translate message to step info
+                step_info = translate_safety_message(message)
+                
+                if step_info:
+                    step_key = None
+                    message_upper = message.upper()
+                    
+                    # Find matching step key
+                    for key in SAFETY_STEP_DEFINITIONS.keys():
+                        if key in message_upper:
+                            step_key = key
+                            break
+                    
+                    if not step_key and 'SAFETY_CHECKING_' in message_upper:
+                        step_key = 'SAFETY_CHECKING'
+                    
+                    if step_key:
+                        # Update step state
+                        if 'COMPLETED' in message_upper:
+                            step_states[step_key] = 'completed'
+                            # Mark previous active as completed
+                            for other_key in step_states:
+                                if other_key != step_key and step_states[other_key] == 'active':
+                                    step_states[other_key] = 'completed'
+                        elif 'FAILED' in message_upper or 'ERROR' in message_upper:
+                            step_states[step_key] = 'failed'
+                        elif 'STARTED' in message_upper or 'CHECKING' in message_upper:
+                            # Mark previous active as completed
+                            for other_key in step_states:
+                                if other_key != step_key and step_states[other_key] == 'active':
+                                    step_states[other_key] = 'completed'
+                            step_states[step_key] = 'active'
+                        
+                        # Render progress
+                        render_safety_progress(progress_container, step_states)
+                        time.sleep(0.3)  # Small delay for visual effect
+        
+        # Run the actual safety monitor agent
+        safety_result = run_safety_monitor(patient_id, doctor_decision, patient_context, emit)
+        
+        # Convert agent warnings format to frontend format
+        warnings = []
+        for warning in safety_result.get('warnings', []):
+            warnings.append({
+                'drug_name': warning.get('drug_name', ''),
+                'severity': warning.get('severity', 'medium'),
+                'message': warning.get('message', ''),
+                'recommendation': warning.get('recommendation', ''),
+                'category': warning.get('warning_type', 'general'),
+                'source': warning.get('source', '')
+            })
+        
+        return {
+            'status': safety_result.get('status', 'completed'),
+            'warnings': warnings,
+            'alternatives': safety_result.get('alternatives', []),
+            'summary': safety_result.get('summary', 'Safety analysis completed'),
+            'recommendations': safety_result.get('recommendations', []),
+            'llm_insights': safety_result.get('llm_insights', [])
+        }
+        
+    except Exception as e:
+        # Fallback to basic check if agent fails
+        import traceback
+        print(f"Safety monitor agent error: {e}")
+        print(traceback.format_exc())
+        
+        # Return basic error response
+        return {
+            'status': 'error',
+            'warnings': [{
+                'drug_name': 'System',
+                'severity': 'medium',
+                'message': f'Safety check encountered an error: {str(e)}',
+                'recommendation': 'Please review prescriptions manually',
+                'category': 'system_error'
+            }],
+            'alternatives': [],
+            'summary': f'Safety check failed: {str(e)}'
+        }
 
 def main():
     """Main application function"""
@@ -540,24 +949,49 @@ def main():
             # Store in session state
             st.session_state['doctor_decision'] = doctor_decision
             
-            # Run safety check with dramatic thinking
-            with st.spinner("🧠 Analyzing prescription safety..."):
-                time.sleep(2)  # Dramatic thinking pause
-                safety_result = run_safety_check(doctor_decision, patient_data)
-                st.session_state['safety_result'] = safety_result
-                
-                # Check if we have critical/high warnings for dramatic popup
-                warnings = safety_result.get('warnings', [])
-                critical_warnings = [w for w in warnings if w['severity'] == 'critical']
-                high_warnings = [w for w in warnings if w['severity'] == 'high']
-                
-                if critical_warnings or high_warnings:
-                    # Set flag to show dramatic popup
-                    st.session_state['show_dramatic_alert'] = True
-                    st.rerun()
-                else:
-                    st.success("✅ Prescription appears safe!")
-                    st.rerun()
+            # Run safety check using Safety Monitor Agent with progress display
+            st.markdown("")
+            st.markdown("""
+            <div style='display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;'>
+                <i class="fas fa-shield-halved" style='color: #dc2626; font-size: 1.5rem; animation: sparkle 2s ease-in-out infinite;'></i>
+                <h3 style='margin: 0; display: inline;'>🛡️ Safety Monitor Analysis in Progress</h3>
+                <i class="fas fa-shield-halved" style='color: #dc2626; font-size: 1.5rem; animation: sparkle 2s ease-in-out infinite 0.5s;'></i>
+            </div>
+            <style>
+            @keyframes sparkle {
+                0%, 100% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.6; transform: scale(1.2); }
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            st.markdown("<p style='color: #64748b; margin-bottom: 1.5rem;'>Comprehensive safety analysis: checking interactions, contraindications, guidelines, pharmacology, and patient history.</p>", unsafe_allow_html=True)
+            
+            # Progress display container
+            progress_display_container = st.empty()
+            
+            # Track step states
+            step_states = {}
+            for step_key in SAFETY_STEP_DEFINITIONS.keys():
+                step_states[step_key] = 'pending'
+            
+            # Initial render
+            render_safety_progress(progress_display_container, step_states)
+            
+            safety_result = run_safety_check(doctor_decision, patient_data, progress_display_container, step_states)
+            st.session_state['safety_result'] = safety_result
+            
+            # Check if we have critical/high warnings for dramatic alert
+            warnings = safety_result.get('warnings', [])
+            critical_warnings = [w for w in warnings if w.get('severity') == 'critical']
+            high_warnings = [w for w in warnings if w.get('severity') == 'high']
+            
+            if critical_warnings or high_warnings:
+                # Set flag to show dramatic alert
+                st.session_state['show_dramatic_alert'] = True
+                st.rerun()
+            else:
+                st.success("✅ Prescription appears safe!")
+                st.rerun()
     
     # Display safety results if available
     if 'safety_result' in st.session_state and st.session_state['safety_result']:
@@ -573,46 +1007,30 @@ def main():
                 critical_warnings = [w for w in warnings if w['severity'] == 'critical']
                 high_warnings = [w for w in warnings if w['severity'] == 'high']
                 
-                # Show dramatic popup automatically if we have critical/high warnings
+                # Show dramatic alert if we have critical/high warnings
                 if (critical_warnings or high_warnings) and st.session_state.get('show_dramatic_alert', False):
-                    # Create a dramatic alert using Streamlit components with custom styling
+                    # Create prominent alert section (Streamlit-friendly approach)
                     st.markdown("""
                     <div style="
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        width: 100%;
-                        height: 100%;
-                        background: rgba(0, 0, 0, 0.8);
-                        z-index: 9999;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
+                        background: linear-gradient(135deg, #dc2626, #ef4444);
+                        color: white;
+                        padding: 2rem;
+                        border-radius: 15px;
+                        margin: 2rem 0;
+                        box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4);
+                        border: 4px solid #991b1b;
+                        animation: pulse-alert 2s ease-in-out infinite;
                     ">
-                        <div style="
-                            background: white;
-                            border: 4px solid #dc2626;
-                            border-radius: 15px;
-                            padding: 2rem;
-                            max-width: 700px;
-                            width: 90%;
-                            max-height: 80vh;
-                            overflow-y: auto;
-                            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-                        ">
-                            <div style="
-                                background: linear-gradient(135deg, #dc2626, #ef4444);
-                                color: white;
-                                padding: 1.5rem;
-                                margin: -2rem -2rem 2rem -2rem;
-                                border-radius: 12px 12px 0 0;
-                                text-align: center;
-                                font-size: 1.8rem;
-                                font-weight: bold;
-                                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-                            ">
-                                🚨 CRITICAL SAFETY ALERT 🚨
-                            </div>
+                        <div style="text-align: center; font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+                            🚨 CRITICAL SAFETY ALERT 🚨
+                        </div>
+                    </div>
+                    <style>
+                    @keyframes pulse-alert {
+                        0%, 100% { box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4); }
+                        50% { box-shadow: 0 10px 40px rgba(220, 38, 38, 0.6); }
+                    }
+                    </style>
                     """, unsafe_allow_html=True)
                     
                     # Display critical warnings
@@ -622,6 +1040,8 @@ def main():
                             st.error(f"**🚨 {warning['drug_name']}**")
                             st.error(f"**Issue:** {warning['message']}")
                             st.warning(f"**⚠️ RECOMMENDATION:** {warning['recommendation']}")
+                            if warning.get('source'):
+                                st.caption(f"*Source: {warning['source']}*")
                             st.markdown("---")
                     
                     # Display high warnings
@@ -631,6 +1051,8 @@ def main():
                             st.warning(f"**⚠️ {warning['drug_name']}**")
                             st.warning(f"**Issue:** {warning['message']}")
                             st.info(f"**⚠️ RECOMMENDATION:** {warning['recommendation']}")
+                            if warning.get('source'):
+                                st.caption(f"*Source: {warning['source']}*")
                             st.markdown("---")
                     
                     # Display alternatives
@@ -644,26 +1066,13 @@ def main():
                             st.info(f"**Reason:** {alt.get('reason', 'Safety concern')}")
                             st.markdown("---")
                     
-                    # Urgent Alert Info button
-                    if st.button("🚨 URGENT ALERT INFO", type="primary", use_container_width=True):
-                        st.session_state['show_dramatic_alert'] = False
-                        st.rerun()
+                    # Close button - properly placed
+                    col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+                    with col_btn2:
+                        if st.button("✅ ACKNOWLEDGE & DISMISS ALERT", type="primary", use_container_width=True, key="acknowledge_alert_btn"):
+                            st.session_state['show_dramatic_alert'] = False
+                            st.rerun()
                     
-                    # Acknowledge button
-                    if st.button("🚨 ACKNOWLEDGE SAFETY ALERT", type="primary", use_container_width=True):
-                        st.session_state['show_dramatic_alert'] = False
-                        st.rerun()
-                    
-                    # Close the popup div
-                    st.markdown("""
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Reset the alert flag
-                    st.session_state['show_dramatic_alert'] = False
-                    
-                    # Also show regular warnings below
                     st.markdown("---")
                     st.markdown("### 📋 Detailed Safety Analysis")
                 

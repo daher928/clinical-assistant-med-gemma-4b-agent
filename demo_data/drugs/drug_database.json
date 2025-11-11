@@ -1,0 +1,403 @@
+{
+  "version": "1.0",
+  "last_updated": "2025-10-01",
+  "drugs": {
+    "metformin": {
+      "name": "Metformin",
+      "drug_class": ["Biguanide", "Antidiabetic"],
+      "mechanism": "Decreases hepatic glucose production and intestinal glucose absorption, increases peripheral glucose uptake",
+      "contraindications": [
+        {
+          "condition": "severe renal impairment",
+          "severity": "critical",
+          "description": "Contraindicated if eGFR <30 mL/min/1.73m² due to risk of lactic acidosis",
+          "alternative": "Insulin therapy or sulfonylurea",
+          "lab_check": {"test": "eGFR", "threshold": 30, "operator": "<"}
+        },
+        {
+          "condition": "severe hepatic impairment",
+          "severity": "high",
+          "description": "Use with caution in liver disease",
+          "alternative": "Insulin therapy"
+        },
+        {
+          "condition": "metabolic acidosis",
+          "severity": "critical",
+          "description": "Contraindicated in metabolic acidosis",
+          "alternative": "Insulin therapy"
+        }
+      ],
+      "dosing": {
+        "adult": {
+          "initial": "500mg once or twice daily",
+          "max": "2550mg daily (850mg TID)",
+          "renal_adjustment": {
+            "egfr_45_60": "Reduce dose by 50%",
+            "egfr_30_45": "Reduce dose by 50%, monitor closely",
+            "egfr_<30": "Contraindicated"
+          }
+        },
+        "elderly": "Start with lower dose (500mg daily), titrate slowly",
+        "weight_based": false
+      },
+      "monitoring": [
+        "Renal function (eGFR) every 3-6 months",
+        "B12 levels annually (risk of deficiency)",
+        "Lactic acid if symptoms of lactic acidosis"
+      ],
+      "pregnancy_category": "B",
+      "lactation": "Compatible with breastfeeding",
+      "common_interactions": [
+        "ACE inhibitors may enhance hypoglycemic effect",
+        "Loop diuretics may increase metformin levels",
+        "Alcohol increases risk of lactic acidosis"
+      ]
+    },
+    "lisinopril": {
+      "name": "Lisinopril",
+      "drug_class": ["ACE Inhibitor", "Antihypertensive"],
+      "mechanism": "Inhibits angiotensin-converting enzyme, reducing angiotensin II formation and aldosterone secretion",
+      "contraindications": [
+        {
+          "condition": "pregnancy",
+          "severity": "critical",
+          "description": "Contraindicated in pregnancy - can cause fetal harm",
+          "alternative": "Methyldopa, labetalol, or nifedipine"
+        },
+        {
+          "condition": "bilateral renal artery stenosis",
+          "severity": "critical",
+          "description": "May cause acute renal failure",
+          "alternative": "Calcium channel blocker"
+        },
+        {
+          "condition": "angioedema",
+          "severity": "critical",
+          "description": "History of angioedema with ACE inhibitors",
+          "alternative": "ARB (losartan, valsartan)"
+        }
+      ],
+      "dosing": {
+        "adult": {
+          "initial": "10mg once daily",
+          "max": "40mg daily",
+          "renal_adjustment": {
+            "egfr_30_60": "Reduce dose by 50%",
+            "egfr_<30": "Reduce dose by 75% or use alternative"
+          }
+        },
+        "elderly": "Start with 2.5-5mg daily",
+        "weight_based": false
+      },
+      "monitoring": [
+        "Serum creatinine and potassium within 1-2 weeks of initiation",
+        "BP monitoring",
+        "Monitor for cough (common side effect)"
+      ],
+      "pregnancy_category": "D",
+      "lactation": "Use with caution",
+      "common_interactions": [
+        "Potassium-sparing diuretics increase hyperkalemia risk",
+        "NSAIDs may reduce antihypertensive effect",
+        "Lithium levels may increase"
+      ]
+    },
+    "ibuprofen": {
+      "name": "Ibuprofen",
+      "drug_class": ["NSAID", "Nonsteroidal Anti-inflammatory"],
+      "mechanism": "Inhibits cyclooxygenase (COX-1 and COX-2), reducing prostaglandin synthesis",
+      "contraindications": [
+        {
+          "condition": "severe heart failure",
+          "severity": "high",
+          "description": "NSAIDs can worsen heart failure by causing fluid retention",
+          "alternative": "Acetaminophen or topical agents"
+        },
+        {
+          "condition": "severe renal impairment",
+          "severity": "high",
+          "description": "NSAIDs can cause acute kidney injury, especially with eGFR <60",
+          "alternative": "Acetaminophen",
+          "lab_check": {"test": "eGFR", "threshold": 60, "operator": "<"}
+        },
+        {
+          "condition": "active peptic ulcer",
+          "severity": "critical",
+          "description": "NSAIDs increase risk of GI bleeding",
+          "alternative": "Acetaminophen or COX-2 selective NSAID with PPI"
+        },
+        {
+          "condition": "pregnancy_third_trimester",
+          "severity": "critical",
+          "description": "Contraindicated in third trimester - can cause premature closure of ductus arteriosus",
+          "alternative": "Acetaminophen"
+        }
+      ],
+      "dosing": {
+        "adult": {
+          "initial": "200-400mg every 4-6 hours",
+          "max": "3200mg daily",
+          "renal_adjustment": {
+            "egfr_<60": "Avoid or use lowest effective dose",
+            "egfr_<30": "Contraindicated"
+          }
+        },
+        "elderly": "Start with lower dose (200mg), monitor closely",
+        "weight_based": false
+      },
+      "monitoring": [
+        "Renal function if used long-term",
+        "GI symptoms (ulcer risk)",
+        "BP (may increase blood pressure)"
+      ],
+      "pregnancy_category": "D (third trimester), C (first/second)",
+      "lactation": "Compatible with breastfeeding (low levels in milk)",
+      "common_interactions": [
+        "ACE inhibitors: May reduce antihypertensive effect and worsen renal function",
+        "Warfarin: Increases bleeding risk",
+        "Aspirin: May reduce cardioprotective effect of aspirin"
+      ]
+    },
+    "warfarin": {
+      "name": "Warfarin",
+      "drug_class": ["Anticoagulant", "Vitamin K Antagonist"],
+      "mechanism": "Inhibits vitamin K epoxide reductase, preventing synthesis of vitamin K-dependent clotting factors",
+      "contraindications": [
+        {
+          "condition": "active bleeding",
+          "severity": "critical",
+          "description": "Contraindicated with active bleeding",
+          "alternative": "Mechanical prophylaxis or DOAC"
+        },
+        {
+          "condition": "severe thrombocytopenia",
+          "severity": "high",
+          "description": "High bleeding risk",
+          "alternative": "DOAC or aspirin",
+          "lab_check": {"test": "Platelet count", "threshold": 50000, "operator": "<"}
+        },
+        {
+          "condition": "pregnancy",
+          "severity": "critical",
+          "description": "Teratogenic - causes fetal warfarin syndrome",
+          "alternative": "Heparin or LMWH"
+        }
+      ],
+      "dosing": {
+        "adult": {
+          "initial": "5mg daily (varies by indication)",
+          "max": "Dose adjusted to INR target",
+          "renal_adjustment": {
+            "egfr_any": "No dose adjustment needed"
+          }
+        },
+        "elderly": "Lower initial dose (2-5mg), slower titration",
+        "weight_based": false
+      },
+      "monitoring": [
+        "INR weekly until stable, then monthly",
+        "CBC periodically",
+        "Signs of bleeding"
+      ],
+      "pregnancy_category": "X",
+      "lactation": "Compatible with breastfeeding",
+      "common_interactions": [
+        "Many drugs affect INR - check interaction database",
+        "Aspirin increases bleeding risk",
+        "Antibiotics may increase INR"
+      ]
+    },
+    "furosemide": {
+      "name": "Furosemide",
+      "drug_class": ["Loop Diuretic"],
+      "mechanism": "Inhibits Na-K-2Cl cotransporter in thick ascending limb of loop of Henle",
+      "contraindications": [
+        {
+          "condition": "anuria",
+          "severity": "critical",
+          "description": "Ineffective in anuria",
+          "alternative": "Dialysis"
+        },
+        {
+          "condition": "severe hypokalemia",
+          "severity": "high",
+          "description": "May worsen hypokalemia",
+          "alternative": "Potassium-sparing diuretic or correct K+ first",
+          "lab_check": {"test": "Potassium", "threshold": 3.0, "operator": "<"}
+        }
+      ],
+      "dosing": {
+        "adult": {
+          "initial": "20-40mg once or twice daily",
+          "max": "600mg daily",
+          "renal_adjustment": {
+            "egfr_<30": "May need higher doses"
+          }
+        },
+        "elderly": "Start with lower dose, monitor closely",
+        "weight_based": false
+      },
+      "monitoring": [
+        "Electrolytes (K+, Na+, Mg2+)",
+        "Renal function",
+        "Volume status and BP"
+      ],
+      "pregnancy_category": "C",
+      "lactation": "Compatible with breastfeeding",
+      "common_interactions": [
+        "ACE inhibitors: May cause excessive hypotension and worsen renal function",
+        "Digoxin: Hypokalemia increases digoxin toxicity",
+        "Aminoglycosides: Increased ototoxicity risk"
+      ]
+    },
+    "digoxin": {
+      "name": "Digoxin",
+      "drug_class": ["Cardiac Glycoside"],
+      "mechanism": "Inhibits Na-K-ATPase, increasing intracellular calcium and cardiac contractility",
+      "contraindications": [
+        {
+          "condition": "ventricular fibrillation",
+          "severity": "critical",
+          "description": "Contraindicated in VF",
+          "alternative": "Antiarrhythmic"
+        },
+        {
+          "condition": "severe renal impairment",
+          "severity": "high",
+          "description": "Requires dose reduction - digoxin is renally cleared",
+          "alternative": "Beta-blocker or calcium channel blocker",
+          "lab_check": {"test": "eGFR", "threshold": 30, "operator": "<"}
+        }
+      ],
+      "dosing": {
+        "adult": {
+          "initial": "0.125-0.25mg daily",
+          "max": "Dose adjusted to therapeutic level (0.5-2.0 ng/mL)",
+          "renal_adjustment": {
+            "egfr_30_60": "Reduce dose by 50%",
+            "egfr_<30": "Reduce dose by 75% or use alternative"
+          }
+        },
+        "elderly": "Lower initial dose (0.125mg), monitor levels",
+        "weight_based": false
+      },
+      "monitoring": [
+        "Digoxin level (target 0.5-2.0 ng/mL)",
+        "Renal function",
+        "Potassium and magnesium (hypokalemia/hypomagnesemia increase toxicity)"
+      ],
+      "pregnancy_category": "C",
+      "lactation": "Compatible with breastfeeding",
+      "common_interactions": [
+        "Loop diuretics: Hypokalemia increases digoxin toxicity",
+        "Amiodarone: Increases digoxin levels",
+        "Verapamil: Increases digoxin levels"
+      ]
+    },
+    "amoxicillin": {
+      "name": "Amoxicillin",
+      "drug_class": ["Penicillin", "Beta-lactam Antibiotic"],
+      "mechanism": "Inhibits bacterial cell wall synthesis by binding to penicillin-binding proteins",
+      "contraindications": [
+        {
+          "condition": "penicillin allergy",
+          "severity": "critical",
+          "description": "Contraindicated in penicillin allergy - cross-reactivity risk",
+          "alternative": "Cephalexin (if no cephalosporin allergy) or macrolide"
+        },
+        {
+          "condition": "severe renal impairment",
+          "severity": "high",
+          "description": "Requires dose adjustment",
+          "lab_check": {"test": "eGFR", "threshold": 30, "operator": "<"}
+        }
+      ],
+      "dosing": {
+        "adult": {
+          "initial": "250-500mg every 8 hours",
+          "max": "3000mg daily",
+          "renal_adjustment": {
+            "egfr_10_30": "250-500mg every 12 hours",
+            "egfr_<10": "250-500mg every 24 hours"
+          }
+        },
+        "elderly": "Standard dosing, adjust for renal function",
+        "weight_based": false
+      },
+      "monitoring": [
+        "Signs of allergic reaction",
+        "Renal function if used long-term"
+      ],
+      "pregnancy_category": "B",
+      "lactation": "Compatible with breastfeeding",
+      "common_interactions": [
+        "Probenecid: Increases amoxicillin levels",
+        "Oral contraceptives: May reduce effectiveness"
+      ]
+    },
+    "atorvastatin": {
+      "name": "Atorvastatin",
+      "drug_class": ["HMG-CoA Reductase Inhibitor", "Statin"],
+      "mechanism": "Inhibits HMG-CoA reductase, reducing cholesterol synthesis in liver",
+      "contraindications": [
+        {
+          "condition": "active liver disease",
+          "severity": "critical",
+          "description": "Contraindicated in active liver disease",
+          "alternative": "Pravastatin or rosuvastatin (less hepatotoxic)"
+        },
+        {
+          "condition": "pregnancy",
+          "severity": "critical",
+          "description": "Contraindicated in pregnancy",
+          "alternative": "Discontinue during pregnancy"
+        }
+      ],
+      "dosing": {
+        "adult": {
+          "initial": "10-20mg daily",
+          "max": "80mg daily",
+          "renal_adjustment": {
+            "egfr_any": "No dose adjustment needed"
+          }
+        },
+        "elderly": "Standard dosing",
+        "weight_based": false
+      },
+      "monitoring": [
+        "LFTs at baseline, then as clinically indicated",
+        "CK if muscle symptoms",
+        "Lipid panel after 4-12 weeks"
+      ],
+      "pregnancy_category": "X",
+      "lactation": "Contraindicated",
+      "common_interactions": [
+        "Cyclosporine: Increases statin levels significantly",
+        "Gemfibrozil: Increases myopathy risk",
+        "Grapefruit juice: May increase levels"
+      ]
+    }
+  },
+  "drug_classes": {
+    "penicillin": {
+      "members": ["amoxicillin", "ampicillin", "penicillin", "amoxicillin-clavulanate"],
+      "cross_reactivity": {
+        "cephalosporin": "Low risk (<5%)",
+        "carbapenem": "Moderate risk"
+      }
+    },
+    "ace_inhibitor": {
+      "members": ["lisinopril", "enalapril", "captopril", "ramipril", "quinapril"],
+      "common_side_effects": ["cough", "hyperkalemia", "angioedema"]
+    },
+    "nsaid": {
+      "members": ["ibuprofen", "naproxen", "diclofenac", "indomethacin", "meloxicam"],
+      "common_contraindications": ["severe heart failure", "severe renal impairment", "active peptic ulcer"]
+    },
+    "statin": {
+      "members": ["atorvastatin", "simvastatin", "pravastatin", "rosuvastatin", "lovastatin"],
+      "monitoring": ["LFTs", "CK if muscle symptoms"]
+    }
+  }
+}
+
