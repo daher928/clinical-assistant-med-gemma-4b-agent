@@ -32,6 +32,7 @@ st.set_page_config(
 
 # Professional Medical UI - Custom CSS
 st.markdown("""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     /* Import professional fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap');
@@ -270,6 +271,193 @@ st.markdown("""
         margin-top: 2rem;
     }
     
+    /* Clinical Section Cards - Enhanced Design */
+    .clinical-section-card {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 1.75rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #cbd5e1;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .clinical-section-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+        border-color: #cbd5e1;
+    }
+    
+    /* Section-specific styling */
+    .section-diagnosis {
+        border-left-color: #3b82f6;
+        background: linear-gradient(to right, #eff6ff 0%, #ffffff 15%);
+    }
+    
+    .section-reasoning {
+        border-left-color: #60a5fa;
+        background: linear-gradient(to right, #f0f9ff 0%, #ffffff 15%);
+    }
+    
+    .section-differential {
+        border-left-color: #64748b;
+        background: #ffffff;
+    }
+    
+    .section-attention {
+        border-left-color: #f59e0b;
+        background: linear-gradient(to right, #fffbeb 0%, #ffffff 15%);
+    }
+    
+    .section-recommendations {
+        border-left-color: #22c55e;
+        background: linear-gradient(to right, #f0fdf4 0%, #ffffff 15%);
+    }
+    
+    /* Section header with icon */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #f1f5f9;
+    }
+    
+    .section-icon {
+        font-size: 1.2rem;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        flex-shrink: 0;
+    }
+    
+    .section-diagnosis .section-icon {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+    
+    .section-reasoning .section-icon {
+        background: #e0f2fe;
+        color: #0284c7;
+    }
+    
+    .section-differential .section-icon {
+        background: #f1f5f9;
+        color: #475569;
+    }
+    
+    .section-attention .section-icon {
+        background: #fef3c7;
+        color: #d97706;
+    }
+    
+    .section-recommendations .section-icon {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+    
+    .section-title {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+        margin: 0;
+        flex: 1;
+    }
+    
+    /* Custom typography per section */
+    .section-diagnosis .section-title {
+        font-size: 1.5rem;
+        color: #1e40af;
+    }
+    
+    .section-reasoning .section-title {
+        font-size: 1.1rem;
+        color: #0c4a6e;
+    }
+    
+    .section-differential .section-title {
+        font-size: 1rem;
+        color: #334155;
+    }
+    
+    .section-attention .section-title {
+        font-size: 1.15rem;
+        color: #92400e;
+        font-weight: 700;
+    }
+    
+    .section-recommendations .section-title {
+        font-size: 1.1rem;
+        color: #166534;
+    }
+    
+    /* Section content styling */
+    .section-content {
+        color: #334155;
+        line-height: 1.7;
+        font-size: 0.95rem;
+    }
+    
+    .section-content ul {
+        margin: 0.75rem 0;
+        padding-left: 1.5rem;
+    }
+    
+    .section-content li {
+        margin: 0.5rem 0;
+        line-height: 1.6;
+    }
+    
+    .section-content strong {
+        color: #1e293b;
+        font-weight: 600;
+    }
+    
+    .section-content h4 {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 1rem;
+        margin-top: 1.25rem;
+        margin-bottom: 0.75rem;
+        color: #475569;
+    }
+    
+    /* Badge styling for severity levels */
+    .severity-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .badge-critical {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .badge-high {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .badge-medium {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .badge-low {
+        background: #f0fdf4;
+        color: #166534;
+    }
+    
     /* Button System - Professional & Polished */
     .stButton > button {
         font-family: 'Inter', sans-serif;
@@ -504,25 +692,327 @@ with st.sidebar:
 # PATIENT SELECTION DASHBOARD
 # ============================================================================
 
-# Patient database
-patient_data = {
-    "P001": {
-        "name": "John Doe",
-        "age": 68,
-        "gender": "Male",
-        "conditions": ["CKD Stage 3b", "T2DM", "HTN", "Anemia"],
-        "risk_level": "HIGH",
-        "default_complaint": "Fatigue and dizziness for 2 weeks. Reports decreased appetite."
-    },
-    "P002": {
-        "name": "Jane Smith",
-        "age": 45,
-        "gender": "Female",
-        "conditions": ["Asthma", "Migraines", "Anxiety"],
-        "risk_level": "MEDIUM",
-        "default_complaint": "Increased shortness of breath and wheezing for 3 days."
+# Load patient database from JSON file
+def load_patient_database():
+    """Load patient database from JSON file"""
+    try:
+        with open('patient_database.json', 'r') as f:
+            database = json.load(f)
+            return database.get('patients', [])
+    except FileNotFoundError:
+        st.error("⚠️ patient_database.json not found. Using fallback data.")
+        return []
+
+# Transform database format to frontend format
+def transform_patient_data(patients_list):
+    """Transform patient database format to frontend format"""
+    patient_data = {}
+    default_complaints = {
+        "P001": "Fatigue and dizziness for 2 weeks. Reports decreased appetite.",
+        "P002": "Increased shortness of breath and wheezing for 3 days.",
+        "P003": "Chest discomfort and irregular heartbeat.",
+        "P004": "Routine prenatal care visit.",
+        "P005": "Increased shortness of breath, cough with sputum, and wheezing.",
+        "P006": "knee pain and swelling for 3 weeks"  # Omar - no default complaint, user will add
     }
-}
+    
+    for patient in patients_list:
+        pid = patient.get('patient_id', '')
+        demographics = patient.get('demographics', {})
+        conditions = patient.get('conditions', [])
+        
+        # Determine risk level based on conditions
+        risk_level = "MEDIUM"
+        if any('kidney' in c.lower() or 'ckd' in c.lower() or 'heart failure' in c.lower() for c in conditions):
+            risk_level = "HIGH"
+        elif len(conditions) <= 1:
+            risk_level = "LOW"
+        
+        patient_data[pid] = {
+            "name": patient.get('name', 'Unknown'),
+            "age": demographics.get('age', 0),
+            "gender": demographics.get('gender', 'Unknown'),
+            "conditions": conditions,
+            "risk_level": risk_level,
+            "default_complaint": default_complaints.get(pid, "")
+        }
+    
+    return patient_data
+
+# Load and transform patient data
+patients_list = load_patient_database()
+patient_data = transform_patient_data(patients_list)
+
+# Fallback if database is empty
+if not patient_data:
+    patient_data = {
+        "P001": {
+            "name": "John Doe",
+            "age": 68,
+            "gender": "Male",
+            "conditions": ["CKD Stage 3b", "T2DM", "HTN", "Anemia"],
+            "risk_level": "HIGH",
+            "default_complaint": "Fatigue and dizziness for 2 weeks. Reports decreased appetite."
+        },
+        "P002": {
+            "name": "Jane Smith",
+            "age": 45,
+            "gender": "Female",
+            "conditions": ["Asthma", "Migraines", "Anxiety"],
+            "risk_level": "MEDIUM",
+            "default_complaint": "Increased shortness of breath and wheezing for 3 days."
+        }
+    }
+
+# ============================================================================
+# CLINICAL REPORT PARSER AND RENDERER
+# ============================================================================
+
+def parse_clinical_report(markdown_text: str) -> list:
+    """
+    Parse markdown clinical report into structured sections.
+    
+    Args:
+        markdown_text: Raw markdown report text
+        
+    Returns:
+        List of dicts with 'type', 'title', 'content', 'css_class', 'icon'
+    """
+    import re
+    
+    # Icon mapping for different section types
+    icon_mapping = {
+        'PRIMARY DIAGNOSIS': 'fa-stethoscope',
+        'CLINICAL REASONING': 'fa-brain',
+        'DIFFERENTIAL DIAGNOSIS': 'fa-list-check',
+        'ATTENTION NEEDED': 'fa-exclamation-triangle',
+        'RECOMMENDATIONS': 'fa-clipboard-check',
+        'CURRENT MEDICATIONS': 'fa-pills',
+        'CLINICAL ASSESSMENT': 'fa-file-medical'
+    }
+    
+    # CSS class mapping
+    css_mapping = {
+        'PRIMARY DIAGNOSIS': 'section-diagnosis',
+        'CLINICAL REASONING': 'section-reasoning',
+        'DIFFERENTIAL DIAGNOSIS': 'section-differential',
+        'ATTENTION NEEDED': 'section-attention',
+        'RECOMMENDATIONS': 'section-recommendations',
+        'CURRENT MEDICATIONS': 'section-attention',
+        'CLINICAL ASSESSMENT': None  # Container, not a card
+    }
+    
+    sections = []
+    lines = markdown_text.split('\n')
+    current_section = None
+    current_content = []
+    skip_main_header = True
+    
+    for line in lines:
+        line_stripped = line.strip()
+        
+        # Skip empty lines at the start
+        if not line_stripped and not current_section:
+            continue
+            
+        # Check for section headers (### or ##)
+        header_match = re.match(r'^#{2,3}\s+(.+)$', line_stripped)
+        if header_match:
+            # Save previous section if exists
+            if current_section and current_content:
+                content_text = '\n'.join(current_content).strip()
+                if content_text:  # Only add if there's content
+                    sections.append({
+                        'type': current_section['type'],
+                        'title': current_section['title'],
+                        'content': content_text,
+                        'css_class': current_section['css_class'],
+                        'icon': current_section['icon']
+                    })
+            
+            # Start new section
+            title = header_match.group(1).strip()
+            title_upper = title.upper()
+            
+            # Skip main "CLINICAL ASSESSMENT" header
+            if 'CLINICAL ASSESSMENT' in title_upper and skip_main_header:
+                skip_main_header = False
+                current_section = None
+                current_content = []
+                continue
+            
+            # Determine section type (case-insensitive matching)
+            section_type = None
+            css_class = None
+            icon = None
+            
+            # Normalize title for matching
+            title_normalized = title_upper.strip()
+            
+            if 'PRIMARY DIAGNOSIS' in title_normalized:
+                section_type = 'PRIMARY DIAGNOSIS'
+                css_class = 'section-diagnosis'
+                icon = 'fa-stethoscope'
+            elif 'CLINICAL REASONING' in title_normalized:
+                section_type = 'CLINICAL REASONING'
+                css_class = 'section-reasoning'
+                icon = 'fa-brain'
+            elif 'DIFFERENTIAL DIAGNOSIS' in title_normalized:
+                section_type = 'DIFFERENTIAL DIAGNOSIS'
+                css_class = 'section-differential'
+                icon = 'fa-list-check'
+            elif 'ATTENTION NEEDED' in title_normalized or 'ATTENTION' in title_normalized:
+                section_type = 'ATTENTION NEEDED'
+                css_class = 'section-attention'
+                icon = 'fa-exclamation-triangle'
+            elif 'RECOMMENDATIONS' in title_normalized:
+                section_type = 'RECOMMENDATIONS'
+                css_class = 'section-recommendations'
+                icon = 'fa-clipboard-check'
+            elif 'CURRENT MEDICATIONS' in title_normalized or ('MEDICATIONS' in title_normalized and 'CURRENT' in title_normalized):
+                section_type = 'CURRENT MEDICATIONS'
+                css_class = 'section-attention'
+                icon = 'fa-pills'
+            
+            if section_type:
+                current_section = {
+                    'type': section_type,
+                    'title': title,
+                    'css_class': css_class,
+                    'icon': icon
+                }
+                current_content = []
+            else:
+                # Unknown section header - treat as content if we're in a section
+                if current_section:
+                    current_content.append(line)
+        else:
+            # Content line
+            if current_section:
+                current_content.append(line)
+    
+    # Add last section
+    if current_section and current_content:
+        content_text = '\n'.join(current_content).strip()
+        if content_text:
+            sections.append({
+                'type': current_section['type'],
+                'title': current_section['title'],
+                'content': content_text,
+                'css_class': current_section['css_class'],
+                'icon': current_section['icon']
+            })
+    
+    return sections
+
+
+def render_clinical_sections(sections: list) -> str:
+    """
+    Render parsed sections as HTML with icons and styling.
+    
+    Args:
+        sections: List of section dicts from parse_clinical_report
+        
+    Returns:
+        HTML string with styled section cards
+    """
+    import re
+    import html
+    
+    html_parts = []
+    
+    for section in sections:
+        css_class = section.get('css_class', 'clinical-section-card')
+        icon = section.get('icon', 'fa-circle')
+        title = html.escape(section.get('title', ''))
+        content = section.get('content', '')
+        
+        # Convert markdown to HTML
+        lines = content.split('\n')
+        html_lines = []
+        in_list = False
+        in_paragraph = False
+        
+        for line in lines:
+            line_stripped = line.strip()
+            
+            # Skip empty lines
+            if not line_stripped:
+                if in_list:
+                    html_lines.append('</ul>')
+                    in_list = False
+                if in_paragraph:
+                    html_lines.append('</p>')
+                    in_paragraph = False
+                continue
+            
+            # Check for markdown headers (###)
+            header_match = re.match(r'^###\s+(.+)$', line_stripped)
+            if header_match:
+                if in_list:
+                    html_lines.append('</ul>')
+                    in_list = False
+                if in_paragraph:
+                    html_lines.append('</p>')
+                    in_paragraph = False
+                header_text = html.escape(header_match.group(1))
+                html_lines.append(f'<h4>{header_text}</h4>')
+                continue
+            
+            # Check if line is a bullet point
+            if line_stripped.startswith('- '):
+                if in_paragraph:
+                    html_lines.append('</p>')
+                    in_paragraph = False
+                if not in_list:
+                    html_lines.append('<ul>')
+                    in_list = True
+                # Extract content after "- "
+                list_content = line_stripped[2:].strip()
+                # Convert **bold** to <strong> (but escape HTML first)
+                list_content = html.escape(list_content)
+                list_content = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', list_content)
+                html_lines.append(f'<li>{list_content}</li>')
+            else:
+                if in_list:
+                    html_lines.append('</ul>')
+                    in_list = False
+                # Regular paragraph text
+                if not in_paragraph:
+                    html_lines.append('<p>')
+                    in_paragraph = True
+                else:
+                    html_lines.append('<br>')
+                
+                # Convert **bold** to <strong> (but escape HTML first)
+                line_escaped = html.escape(line_stripped)
+                line_html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', line_escaped)
+                html_lines.append(line_html)
+        
+        # Close any open tags
+        if in_list:
+            html_lines.append('</ul>')
+        if in_paragraph:
+            html_lines.append('</p>')
+        
+        content_html = '\n'.join(html_lines)
+        
+        # Build HTML output with proper escaping
+        html_output = f"""<div class="clinical-section-card {css_class}">
+    <div class="section-header">
+        <div class="section-icon">
+            <i class="fas {icon}"></i>
+        </div>
+        <h3 class="section-title">{title}</h3>
+    </div>
+    <div class="section-content">
+        {content_html}
+    </div>
+</div>"""
+        html_parts.append(html_output)
+    
+    return '\n'.join(html_parts)
+
 
 # ============================================================================
 # IMPROVEMENT 1: DROPDOWN PATIENT SELECTOR
@@ -792,16 +1282,32 @@ if run_button:
             ])
             
             with tab1:
-                # Display clinical summary in a styled container
-                st.markdown("""
-                <div class='results-container'>
-                """, unsafe_allow_html=True)
-                
                 # Use result from current run or session state
                 display_result = result if result else st.session_state.get('result', 'No results available')
-                st.markdown(display_result)
                 
-                st.markdown("</div>", unsafe_allow_html=True)
+                # Parse and render clinical report with enhanced UI
+                if display_result and display_result != 'No results available':
+                    try:
+                        sections = parse_clinical_report(display_result)
+                        if sections and len(sections) > 0:
+                            # Render sections as styled cards with icons
+                            html_output = render_clinical_sections(sections)
+                            # Use st.components.v1.html or st.markdown with unsafe_allow_html
+                            st.markdown(html_output, unsafe_allow_html=True)
+                        else:
+                            # Fallback to plain markdown if parsing fails
+                            st.markdown(display_result)
+                            if st.session_state.get('debug_mode', False):
+                                st.warning(f"Parsing returned {len(sections) if sections else 0} sections")
+                    except Exception as e:
+                        # Fallback to plain markdown on error
+                        st.markdown(display_result)
+                        if st.session_state.get('debug_mode', False):
+                            st.error(f"Rendering error: {str(e)}")
+                        else:
+                            st.warning("Note: Enhanced rendering unavailable. Showing plain format.")
+                else:
+                    st.info("No clinical summary available. Run an analysis to generate a report.")
                 
                 # Download button
                 col_dl1, col_dl2 = st.columns([1, 3])

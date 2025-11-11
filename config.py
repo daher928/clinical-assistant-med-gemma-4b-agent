@@ -21,7 +21,7 @@ class Config:
         elif torch.backends.mps.is_available():
             # MPS has 4GB temp array limit - may fail with large models
             # Uncomment next line to force CPU if you hit MPS errors
-            return "cpu"  # Force CPU to avoid MPS limitations
+            return "mps"  # Force CPU to avoid MPS limitations
             # return "mps"
         else:
             return "cpu"

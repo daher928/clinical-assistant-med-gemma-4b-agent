@@ -45,11 +45,14 @@ def extract_keywords(text: str) -> list:
     return keywords
 
 
-def run_agent_hybrid(patient_id: str, complaint: str, emit: Callable[[str], None]) -> str:
+def run_agent_intelligent(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
     """
-    HYBRID MODE: Intelligent routing to best autonomy level.
+    INTELLIGENT MODE: Single intelligent agent with LLM-based tool selection.
     
-    Now includes multi-agent system for data insights.
+    Uses IntelligentDiagnosisAgent that demonstrates the core AI agent pattern:
+    - Brain: MedGemma LLM for reasoning
+    - Context: Patient information
+    - Tools: Available actions (get_ehr, get_labs, get_meds, etc.)
     
     Args:
         patient_id: Patient identifier
@@ -57,23 +60,57 @@ def run_agent_hybrid(patient_id: str, complaint: str, emit: Callable[[str], None
         emit: Progress callback
         
     Returns:
-        Clinical summary
+        Tuple of (clinical_summary, observations_dict)
     """
-    # Use multi-agent system for comprehensive analysis
-    emit("USING_MULTI_AGENT_MODE (Level 5 - Comprehensive Analysis)")
-    return run_agent_multi_agent(patient_id, complaint, emit)
+    try:
+        from agent.intelligent_agent import IntelligentDiagnosisAgent
+        from llm.med_gemma_wrapper import MedGemmaLLM
+        
+        # Initialize intelligent agent
+        llm = MedGemmaLLM()
+        agent = IntelligentDiagnosisAgent(llm)
+        
+        # Run agent
+        result = agent.run(patient_id, complaint, emit)
+        
+        return result
+        
+    except Exception as e:
+        emit(f"INTELLIGENT_AGENT_FAILED: {str(e)}")
+        # Fallback to standard mode
+        emit("FALLING_BACK_TO_STANDARD_MODE")
+        return run_agent_standard(patient_id, complaint, emit)
 
 
-def run_agent_standard(patient_id: str, complaint: str, emit: Callable[[str], None]) -> str:
+def run_agent_hybrid(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
+    """
+    HYBRID MODE: Uses intelligent agent (backward compatibility).
+    
+    Args:
+        patient_id: Patient identifier
+        complaint: Clinical complaint
+        emit: Progress callback
+        
+    Returns:
+        Tuple of (clinical_summary, observations_dict)
+    """
+    emit("USING_INTELLIGENT_AGENT_MODE")
+    return run_agent_intelligent(patient_id, complaint, emit)
+
+
+def run_agent_standard(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
     """
     STANDARD MODE: Level 1 autonomy with smart tool selection.
     
     Fast and efficient for most cases.
+    
+    Returns:
+        Tuple of (clinical_summary, observations_dict)
     """
     return _run_agent_level1(patient_id, complaint, emit)
 
 
-def _run_agent_level1(patient_id: str, complaint: str, emit: Callable[[str], None]) -> str:
+def _run_agent_level1(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
     """
     Execute the clinical assistant agent workflow with smart tool selection.
     
@@ -86,7 +123,7 @@ def _run_agent_level1(patient_id: str, complaint: str, emit: Callable[[str], Non
         emit: Callback function to emit progress updates
         
     Returns:
-        Clinical summary text from the LLM
+        Tuple of (clinical_summary, observations_dict)
     """
     observations = {}
     errors = []
@@ -407,11 +444,18 @@ def run_safety_monitor(patient_id: str, doctor_decision: Dict, patient_context: 
 
 
 # Alias for backward compatibility
-def run_agent(patient_id: str, complaint: str, emit: Callable[[str], None]) -> str:
+def run_agent(patient_id: str, complaint: str, emit: Callable[[str], None]):
     """
-    Main entry point - uses hybrid intelligent mode.
+    Main entry point - uses intelligent agent mode.
     
-    Backward compatible alias for run_agent_hybrid.
+    Returns tuple of (summary, observations) for backward compatibility.
     """
-    return run_agent_hybrid(patient_id, complaint, emit)
+    result = run_agent_intelligent(patient_id, complaint, emit)
+    
+    # Handle both tuple and string returns for backward compatibility
+    if isinstance(result, tuple):
+        return result
+    else:
+        # If somehow returns string, wrap it
+        return result, {}
 

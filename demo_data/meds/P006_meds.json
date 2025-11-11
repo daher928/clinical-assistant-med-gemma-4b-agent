@@ -1,0 +1,34 @@
+{
+  "patient_id": "P006",
+  "active": [
+    {
+      "name": "Metformin",
+      "dose": "1000mg",
+      "frequency": "twice daily",
+      "route": "oral",
+      "indication": "Type 2 Diabetes",
+      "start_date": "2010-09-01",
+      "prescriber": "Dr. Martinez"
+    },
+    {
+      "name": "Lisinopril",
+      "dose": "10mg",
+      "frequency": "once daily",
+      "route": "oral",
+      "indication": "Hypertension",
+      "start_date": "2008-12-01",
+      "prescriber": "Dr. Martinez"
+    },
+    {
+      "name": "Warfarin",
+      "dose": "5mg",
+      "frequency": "once daily",
+      "route": "oral",
+      "indication": "Blood thinner (anticoagulation)",
+      "start_date": "2018-06-10",
+      "prescriber": "Dr. Chen (Cardiology)"
+    }
+  ],
+  "discontinued": []
+}
+

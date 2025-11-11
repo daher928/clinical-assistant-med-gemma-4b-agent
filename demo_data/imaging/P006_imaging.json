@@ -1,0 +1,13 @@
+{
+  "patient_id": "P006",
+  "studies": [
+    {
+      "type": "Knee X-Ray (Right)",
+      "date": "2024-07-15",
+      "findings": "Mild degenerative changes in the right knee joint with minimal joint space narrowing. Small osteophytes noted at the tibial plateau and patellofemoral joint. No acute fracture or dislocation. No evidence of joint effusion on this study.",
+      "impression": "Mild osteoarthritis changes, no acute fracture",
+      "radiologist": "Dr. Lee"
+    }
+  ]
+}
+

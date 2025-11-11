@@ -1,0 +1,53 @@
+{
+  "patient_id": "P006",
+  "demographics": {
+    "name": "Omar H.",
+    "age": 72,
+    "gender": "Male",
+    "dob": "1952-03-20"
+  },
+  "conditions": [
+    {
+      "name": "Type 2 Diabetes Mellitus",
+      "icd10": "E11.9",
+      "onset": "2010-08-15",
+      "status": "active"
+    },
+    {
+      "name": "Essential Hypertension",
+      "icd10": "I10",
+      "onset": "2008-11-10",
+      "status": "active"
+    },
+    {
+      "name": "Chronic Kidney Disease Stage 3",
+      "icd10": "N18.3",
+      "onset": "2015-04-22",
+      "status": "active"
+    }
+  ],
+  "allergies": [
+    {
+      "allergen": "Penicillin",
+      "reaction": "Rash",
+      "severity": "moderate"
+    }
+  ],
+  "vitals": {
+    "last_visit": "2025-01-15",
+    "bp": "138/80 mmHg",
+    "hr": "88 bpm",
+    "temp": "98.2°F",
+    "weight": "175 lbs",
+    "height": "5'9\"",
+    "bmi": 25.8
+  },
+  "social_history": {
+    "occupation": "Retired teacher",
+    "living_situation": "Lives with wife",
+    "smoking": "Never",
+    "alcohol": "No alcohol use",
+    "exercise": "Light walking"
+  }
+}
+

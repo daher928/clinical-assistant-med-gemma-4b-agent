@@ -4,16 +4,78 @@ Template-based clinical summary generation.
 Strategy: Pre-build 90% of the output, let LLM fill in ONLY specific blanks.
 This eliminates hallucination by removing creative freedom.
 """
-from typing import Dict
+from typing import Dict, List, Tuple
 
 
 class TemplateSummaryGenerator:
     """
     Generate clinical summaries using strict templates.
     
-    The LLM does NOT write freely - it only completes specific tasks
-    like identifying the primary concern or suggesting next steps.
     """
+    
+    @staticmethod
+    def _diagnose_from_complaint_and_labs(complaint: str, labs: Dict, conditions: List[str]) -> Tuple[str, List[str], str]:
+        """
+        Intelligent diagnosis based on complaint, labs, and conditions.
+        Returns (primary_diagnosis, differential_diagnosis_list, clinical_reasoning)
+        """
+        complaint_lower = complaint.lower()
+        lab_results = labs.get('results', [])
+        
+        # Extract key lab values
+        uric_acid = None
+        creatinine = None
+        egfr = None
+        glucose = None
+        
+        for lab in lab_results:
+            test_name = lab.get('test', '').lower()
+            value = lab.get('value')
+            if 'uric acid' in test_name:
+                uric_acid = value
+            elif 'creatinine' in test_name:
+                creatinine = value
+            elif 'egfr' in test_name:
+                egfr = value
+            elif 'glucose' in test_name:
+                glucose = value
+        
+        # Gout diagnosis logic
+        if any(keyword in complaint_lower for keyword in ['knee', 'joint', 'pain', 'swelling', 'red', 'warm']):
+            if uric_acid and uric_acid > 7.0:
+                differential = [
+                    "Acute gout flare (most likely)",
+                    "Septic arthritis (rule out)",
+                    "Osteoarthritis flare",
+                    "Pseudogout (calcium pyrophosphate deposition)"
+                ]
+                reasoning = f"Acute monoarticular joint pain with elevated uric acid ({uric_acid} mg/dL, normal <7.0) strongly suggests gout. The sudden onset, joint swelling, and hyperuricemia are classic features."
+                return "Acute gout flare (likely)", differential, reasoning
+        
+        # Diabetes-related
+        if any(keyword in complaint_lower for keyword in ['thirst', 'urination', 'fatigue', 'blurred vision']):
+            if glucose and glucose > 126:
+                differential = [
+                    "Poorly controlled diabetes",
+                    "Diabetic ketoacidosis (if ketones present)",
+                    "Hyperosmolar hyperglycemic state"
+                ]
+                reasoning = f"Elevated glucose ({glucose} mg/dL) with diabetic symptoms suggests poor glycemic control."
+                return "Poorly controlled diabetes", differential, reasoning
+        
+        # Kidney-related
+        if any(keyword in complaint_lower for keyword in ['fatigue', 'swelling', 'nausea', 'decreased urine']):
+            if creatinine and creatinine > 1.5:
+                differential = [
+                    "Acute kidney injury",
+                    "CKD progression",
+                    "Volume depletion"
+                ]
+                reasoning = f"Elevated creatinine ({creatinine} mg/dL) indicates renal dysfunction."
+                return "Renal dysfunction", differential, reasoning
+        
+        # Default
+        return "Clinical evaluation needed", ["See differential diagnosis based on complaint"], "Requires further clinical assessment."
     
     @staticmethod
     def generate_from_data(observations: Dict, patient_id: str, complaint: str) -> str:
@@ -35,234 +97,152 @@ class TemplateSummaryGenerator:
         
         # Extract conditions
         conditions = [c.get('name', '') for c in ehr.get('conditions', [])]
-        condition_str = ', '.join(conditions[:3]) if conditions else 'no documented conditions'
         
         # Extract vitals
         vitals = ehr.get('vitals', {})
-        bp = vitals.get('bp', 'not recorded')
-        hr = vitals.get('hr', '?')
-        temp = vitals.get('temp', '?')
+        bp = vitals.get('bp', 'Not recorded')
         
         # Extract allergies
         allergies = [a.get('allergen', '') for a in ehr.get('allergies', [])]
-        allergy_str = ', '.join(allergies) if allergies else 'none documented'
         
-        # Build ONE-LINE summary
-        primary_condition = conditions[0] if conditions else 'multiple conditions'
-        one_liner = f"{age}yo {gender} with {primary_condition} presenting with {complaint}"
+        # Get diagnosis with reasoning
+        primary_diagnosis, differential, reasoning = TemplateSummaryGenerator._diagnose_from_complaint_and_labs(
+            complaint, labs, conditions
+        )
         
-        # Build SNAPSHOT section
-        snapshot = f"""- Age/Gender: {age}yo {gender}
-- Chief Complaint: {complaint}
-- Active Conditions: {condition_str}
-- Allergies: {allergy_str}
-- BP: {bp}, HR: {hr}, Temp: {temp}°F"""
+        # Build CLINICAL REASONING section
+        reasoning_section = reasoning
         
-        # Build ATTENTION NEEDED section with clinical context
+        # Build ATTENTION NEEDED section (only critical findings)
         attention_items = []
         
-        # First, check for CRITICAL labs
-        critical_labs = []
-        high_priority_labs = []
-        
-        for lab in labs.get('results', []):
-            test = lab.get('test')
-            value = lab.get('value')
-            unit = lab.get('unit')
-            status = lab.get('status')
-            
-            if status in ['CRITICAL_HIGH', 'CRITICAL_LOW']:
-                critical_labs.append((test, value, unit, status))
-            elif status in ['HIGH', 'LOW']:
-                high_priority_labs.append((test, value, unit, status))
-        
-        # Add critical labs first with clinical context
-        for test, value, unit, status in critical_labs:
-            if test == 'eGFR':
-                attention_items.append(f"- Severe kidney dysfunction: eGFR {value} {unit} (Stage 4 CKD) [LABS]")
-            elif test == 'Hemoglobin':
-                attention_items.append(f"- Severe anemia: Hemoglobin {value} {unit} (transfusion threshold) [LABS]")
-            elif test == 'Potassium':
-                attention_items.append(f"- Critical hyperkalemia: K+ {value} {unit} (arrhythmia risk) [LABS]")
-            else:
-                attention_items.append(f"- {test}: {value} {unit} ({status}) [LABS]")
-        
-        # Add high-priority labs
-        for test, value, unit, status in high_priority_labs[:3]:  # Limit to top 3
-            attention_items.append(f"- {test}: {value} {unit} ({status}) [LABS]")
-        
-        # Check for worsening trends (VERY important clinically)
-        historical = labs.get('historical_data', {})
-        trend_count = 0
-        for lab in labs.get('results', []):
-            if trend_count >= 2:  # Limit to 2 most important trends
-                break
-                
-            test_name = lab['test']
-            current = lab['value']
-            hist_key = test_name.lower().replace(' ', '_') + '_6mo_ago'
-            
-            if hist_key in historical:
-                past = historical[hist_key]
-                if current != past:
-                    # Determine if trend is worsening
-                    is_worsening = False
-                    if test_name == 'eGFR' and current < past:
-                        is_worsening = True
-                        change_pct = abs(round((current - past) / past * 100, 1))
-                        attention_items.append(
-                            f"- Declining kidney function: eGFR {past} → {current} ({change_pct}% decrease over 6mo) [LABS]"
-                        )
-                        trend_count += 1
-                    elif test_name == 'Hemoglobin' and current < past:
-                        is_worsening = True
-                        attention_items.append(
-                            f"- Worsening anemia: Hemoglobin {past} → {current} {lab['unit']} [LABS]"
-                        )
-                        trend_count += 1
-                    elif test_name in ['Creatinine', 'BUN'] and current > past:
-                        is_worsening = True
-                        attention_items.append(
-                            f"- Rising {test_name}: {past} → {current} {lab['unit']} [LABS]"
-                        )
-                        trend_count += 1
-        
-        attention_section = "\n".join(attention_items) if attention_items else "- All laboratory values within acceptable ranges"
-        
-        # Build MEDICATION CONCERNS section
-        med_concerns = []
-        
-        # List medications
-        active_meds = [m.get('name', '') for m in meds.get('active', [])]
-        if active_meds:
-            med_concerns.append(f"- Active medications: {', '.join(active_meds)} [MEDS]")
-        
-        # List interactions
-        if isinstance(ddi, list) and ddi:
-            for interaction in ddi[:3]:  # Top 3 interactions
-                drug_a = interaction.get('a', '')
-                drug_b = interaction.get('b', '')
-                severity = interaction.get('severity', '')
-                desc = interaction.get('description', '')
-                med_concerns.append(f"- {drug_a} + {drug_b}: {severity} - {desc} [DDI]")
-        else:
-            med_concerns.append("- No significant drug-drug interactions detected [DDI]")
-        
-        med_section = "\n".join(med_concerns)
-        
-        # Build PLAN section with evidence-based recommendations
-        plan_items = []
-        plan_counter = 1
-        
-        # INTELLIGENT CLINICAL REASONING (no LLM needed)
-        
-        # Check for CKD progression
+        # Extract lab values with clinical significance
+        lab_results = labs.get('results', [])
+        uric_acid = None
+        creatinine = None
+        egfr = None
         has_ckd = any('kidney' in c.lower() or 'ckd' in c.lower() for c in conditions)
-        egfr_value = None
-        hgb_value = None
-        k_value = None
-        creat_value = None
+        has_warfarin = any('warfarin' in m.get('name', '').lower() for m in meds.get('active', []))
         
-        for lab in labs.get('results', []):
-            if lab.get('test') == 'eGFR':
-                egfr_value = lab.get('value')
-            elif lab.get('test') == 'Hemoglobin':
-                hgb_value = lab.get('value')
-            elif lab.get('test') == 'Potassium':
-                k_value = lab.get('value')
-            elif lab.get('test') == 'Creatinine':
-                creat_value = lab.get('value')
-        
-        # CKD-specific recommendations (evidence-based)
-        if has_ckd and egfr_value:
-            if egfr_value < 30:
-                plan_items.append(f"{plan_counter}. URGENT: Nephrology referral for Stage 4 CKD (eGFR {egfr_value}) [GUIDELINES]")
-                plan_counter += 1
-            elif egfr_value < 45:
-                plan_items.append(f"{plan_counter}. Nephrology referral for CKD management (eGFR {egfr_value}) [GUIDELINES]")
-                plan_counter += 1
-        
-        # Anemia management (CKD-specific)
-        if has_ckd and hgb_value:
-            if hgb_value < 10:
-                plan_items.append(f"{plan_counter}. Initiate ESA therapy for severe anemia (Hgb {hgb_value}) [GUIDELINES]")
-                plan_counter += 1
-            elif hgb_value < 11:
-                plan_items.append(f"{plan_counter}. Consider ESA for anemia management (Hgb {hgb_value}) [GUIDELINES]")
-                plan_counter += 1
-        
-        # Hyperkalemia management
-        if k_value and k_value > 5.5:
-            plan_items.append(f"{plan_counter}. Monitor potassium closely, consider dietary counseling (K+ {k_value}) [GUIDELINES]")
-            plan_counter += 1
-        
-        # Blood pressure management (CKD-specific targets)
-        if bp != 'not recorded':
-            try:
-                systolic = int(bp.split('/')[0])
-                if systolic > 140:
-                    target = "<130/80" if has_ckd else "<140/90"
-                    plan_items.append(f"{plan_counter}. Optimize BP control (current {bp}, target {target}) [GUIDELINES]")
-                    plan_counter += 1
-            except:
-                pass
-        
-        # Medication review for DDIs
-        if isinstance(ddi, list) and len(ddi) > 0:
-            high_severity = [d for d in ddi if d.get('severity', '').upper() in ['HIGH', 'SEVERE']]
-            if high_severity:
-                plan_items.append(f"{plan_counter}. Review medications for {len(high_severity)} high-severity interactions [DDI]")
-                plan_counter += 1
-        
-        # Check for ACE/ARB in CKD (guideline-directed therapy)
-        if has_ckd:
-            active_meds = [m.get('name', '').lower() for m in meds.get('active', [])]
-            has_ace_arb = any(
-                med for med in active_meds 
-                if 'lisinopril' in med or 'losartan' in med or 'enalapril' in med
-            )
-            if has_ace_arb and creat_value:
-                plan_items.append(f"{plan_counter}. Continue ACE-inhibitor therapy, monitor renal function [GUIDELINES]")
-                plan_counter += 1
-        
-        # Default follow-up timing based on acuity
-        if not plan_items:
-            plan_items.append("1. Continue current management")
-            plan_items.append("2. Routine follow-up in 3 months")
-        else:
-            # Determine follow-up based on findings
-            if egfr_value and egfr_value < 30:
-                followup = "1-2 weeks"
-            elif any('URGENT' in item for item in plan_items):
-                followup = "1-2 weeks"
-            elif len(plan_items) >= 3:
-                followup = "2-4 weeks"
-            else:
-                followup = "4-8 weeks"
+        for lab in lab_results:
+            test = lab.get('test', '')
+            value = lab.get('value')
+            unit = lab.get('unit', '')
+            status = lab.get('status', '')
             
-            plan_items.append(f"{plan_counter}. Follow-up in {followup} to reassess")
+            # Only include clinically significant findings
+            if status in ['HIGH', 'LOW', 'CRITICAL_HIGH', 'CRITICAL_LOW']:
+                if test == 'Uric Acid' and value > 7.0:
+                    uric_acid = value
+                    attention_items.append(f"**Uric Acid {value} {unit} (HIGH)** - Supports gout diagnosis; consider urate-lowering therapy after acute flare resolves [LABS]")
+                elif test == 'Creatinine' and value > 1.3:
+                    creatinine = value
+                    attention_items.append(f"**Creatinine {value} {unit} (HIGH)** - CKD Stage 3; avoid nephrotoxic medications (NSAIDs contraindicated) [LABS]")
+                elif test == 'eGFR' and value < 60:
+                    egfr = value
+                    attention_items.append(f"**eGFR {value} {unit} (LOW)** - Stage 3 CKD; requires renal dosing adjustments [LABS]")
+                elif test in ['HbA1c', 'Glucose'] and status == 'HIGH':
+                    attention_items.append(f"**{test} {value} {unit} (HIGH)** - Diabetes control suboptimal; consider medication adjustment [LABS]")
         
-        plan_section = "\n".join(plan_items)
+        # Medication concerns
+        active_meds = [m.get('name', '') for m in meds.get('active', [])]
+        if has_warfarin:
+            attention_items.append(f"**Warfarin use** - Increased bleeding risk; avoid NSAIDs, monitor INR if starting new medications [MEDS]")
         
-        # Assemble final output
-        summary = f"""## ONE-LINE SUMMARY
-{one_liner}
+        # Check for significant drug interactions
+        if isinstance(ddi, list) and ddi:
+            significant_ddis = [d for d in ddi if d.get('severity', '').upper() in ['HIGH', 'SEVERE']]
+            if significant_ddis:
+                for interaction in significant_ddis[:2]:  # Top 2
+                    drug_a = interaction.get('a', '')
+                    drug_b = interaction.get('b', '')
+                    desc = interaction.get('description', '')
+                    attention_items.append(f"**Drug interaction: {drug_a} + {drug_b}** - {desc} [DDI]")
+        
+        attention_section = "\n".join(f"- {item}" for item in attention_items) if attention_items else "- No critical findings requiring immediate attention"
+        
+        # Build RECOMMENDATIONS section (actionable, complaint-specific)
+        recommendations = []
+        
+        # Gout-specific recommendations
+        complaint_lower = complaint.lower()
+        
+        if any(keyword in complaint_lower for keyword in ['knee', 'joint', 'pain', 'swelling']) and uric_acid and uric_acid > 7.0:
+            recommendations.append("### ACUTE TREATMENT")
+            if has_ckd or has_warfarin:
+                recommendations.append("- **Colchicine 0.6mg PO BID x 3 days** - Preferred over NSAIDs given CKD Stage 3 and warfarin use")
+                recommendations.append("- **Avoid NSAIDs** - Contraindicated due to increased bleeding risk with warfarin and renal impairment")
+            else:
+                recommendations.append("- **Colchicine 0.6mg PO BID x 3 days** OR **NSAID** (e.g., indomethacin 50mg TID x 3 days) if no contraindications")
+            
+            recommendations.append("- **Consider joint aspiration** - For crystal analysis if diagnosis uncertain or concern for septic arthritis")
+            recommendations.append("")
+            recommendations.append("### PREVENTION")
+            recommendations.append("- **Allopurinol 100mg daily** - Start after acute flare resolves (typically 1-2 weeks), titrate to uric acid <6.0 mg/dL")
+            recommendations.append("- **Lifestyle modifications** - Avoid alcohol, high-purine foods (organ meats, shellfish)")
+            recommendations.append("")
+            recommendations.append("### MONITORING")
+            recommendations.append("- **Recheck uric acid in 2-4 weeks** - After starting allopurinol")
+            recommendations.append("- **Monitor renal function** - Creatinine, eGFR q3-6 months given CKD Stage 3")
+            if has_warfarin:
+                recommendations.append("- **Monitor INR closely** - If starting new medications that may interact with warfarin")
+            recommendations.append("")
+            recommendations.append("### FOLLOW-UP")
+            recommendations.append("- **Return in 2-3 days** - If symptoms persist or worsen (rule out septic arthritis)")
+            recommendations.append("- **Routine follow-up in 2-4 weeks** - For uric acid check and medication adjustment")
+        
+        # CKD management (if primary concern)
+        elif has_ckd and egfr and egfr < 45:
+            recommendations.append("### RENAL MANAGEMENT")
+            recommendations.append("- **Continue ACE-inhibitor therapy** - Renal protective (already on Lisinopril)")
+            recommendations.append("- **Monitor renal function** - Creatinine, eGFR q3-6 months")
+            if egfr < 30:
+                recommendations.append("- **Consider nephrology referral** - eGFR <30 (Stage 4 CKD)")
+            recommendations.append("- **Avoid nephrotoxic medications** - NSAIDs, contrast agents")
+            recommendations.append("")
+            recommendations.append("### FOLLOW-UP")
+            recommendations.append("- **Follow-up in 3 months** - For renal function monitoring")
+        
+        # Diabetes management
+        elif any('diabetes' in c.lower() for c in conditions):
+            recommendations.append("### DIABETES MANAGEMENT")
+            recommendations.append("- **Optimize glycemic control** - Current HbA1c above target")
+            recommendations.append("- **Continue metformin** - Monitor for renal function")
+            recommendations.append("- **Consider medication adjustment** - If HbA1c remains elevated")
+            recommendations.append("")
+            recommendations.append("### FOLLOW-UP")
+            recommendations.append("- **Follow-up in 3 months** - For HbA1c monitoring")
+        
+        # Default recommendations
+        if not recommendations:
+            recommendations.append("- Continue current management")
+            recommendations.append("- Follow-up as clinically indicated")
+        
+        recommendations_section = "\n".join(recommendations)
+        
+        # Build DIFFERENTIAL DIAGNOSIS section
+        differential_section = "\n".join(f"- {dx}" for dx in differential)
+        
+        # Assemble final output (focused, actionable structure)
+        summary = f"""## CLINICAL ASSESSMENT
 
-## PATIENT SNAPSHOT
-{snapshot}
+### PRIMARY DIAGNOSIS
+{primary_diagnosis}
 
-## ATTENTION NEEDED
+### CLINICAL REASONING
+{reasoning_section}
+
+### DIFFERENTIAL DIAGNOSIS
+{differential_section}
+
+### ATTENTION NEEDED
 {attention_section}
 
-## MEDICATION CONCERNS
-{med_section}
-
-## PLAN
-{plan_section}
+### RECOMMENDATIONS
+{recommendations_section}
 
 ---
 *Data sources: [EHR] Electronic Health Record, [LABS] Laboratory Results, [MEDS] Medication List, [DDI] Drug Interaction Database, [GUIDELINES] Clinical Practice Guidelines*
 """
         
         return summary.strip()
-

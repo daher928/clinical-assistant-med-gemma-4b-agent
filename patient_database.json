@@ -202,6 +202,37 @@
         "Cough with sputum",
         "Wheezing"
       ]
+    },
+    {
+      "patient_id": "P006",
+      "name": "Omar H.",
+      "demographics": {
+        "age": 72,
+        "gender": "Male"
+      },
+      "conditions": [
+        "Type 2 Diabetes",
+        "High blood pressure",
+        "Chronic kidney disease (stage 3)"
+      ],
+      "allergies": [
+        "Penicillin (rash)"
+      ],
+      "medications": [
+        "Metformin",
+        "Lisinopril",
+        "Warfarin (blood thinner)"
+      ],
+      "labs": {
+        "Uric Acid": 8.6,
+        "Creatinine": 1.6
+      },
+      "vital_signs": {
+        "blood_pressure": "138/80",
+        "heart_rate": 88,
+        "temperature": 98.2,
+        "oxygen_saturation": 96
+      }
     }
   ]
 }
