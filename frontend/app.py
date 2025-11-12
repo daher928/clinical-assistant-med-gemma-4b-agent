@@ -2329,6 +2329,330 @@ if run_button:
                     if st.button("🗑️ Clear Chat", use_container_width=True):
                         st.session_state.chat_history = []
                         st.rerun()
+            
+            with tab2:
+                # Data Insights Tab
+                st.markdown("""
+                <div style='
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    margin-bottom: 1.5rem;
+                '>
+                    <i class="fas fa-sparkles" style='color: #3b82f6; font-size: 1.2rem; animation: sparkle 2s ease-in-out infinite;'></i>
+                    <h3 style='margin: 0; color: #1e293b;'>AI-Generated Data Insights</h3>
+                    <i class="fas fa-sparkles" style='color: #3b82f6; font-size: 1.2rem; animation: sparkle 2s ease-in-out infinite 0.5s;'></i>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Get observations from session state
+                observations = st.session_state.get('observations', {})
+                current_patient_id = st.session_state.get('patient_id', patient_id)
+                patient_info = patient_data.get(current_patient_id, {})
+                
+                if not observations:
+                    st.info("✨ Run a clinical analysis to generate AI-powered insights and dashboards.")
+                else:
+                    # Key Metrics Overview
+                    st.markdown("### 📊 Key Clinical Metrics")
+                    
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    # Extract lab data
+                    labs_data = observations.get('LABS', {}).get('results', [])
+                    meds_data = observations.get('MEDS', {}).get('active', [])
+                    ehr_data = observations.get('EHR', {})
+                    ddi_data = observations.get('DDI', [])
+                    
+                    # Calculate metrics
+                    abnormal_labs = [lab for lab in labs_data if lab.get('status') in ['HIGH', 'LOW']] if isinstance(labs_data, list) else []
+                    num_medications = len(meds_data) if isinstance(meds_data, list) else 0
+                    num_ddi = len(ddi_data) if isinstance(ddi_data, list) else 0
+                    conditions = ehr_data.get('conditions', []) if isinstance(ehr_data, dict) else []
+                    num_conditions = len(conditions) if isinstance(conditions, list) else 0
+                    
+                    with col1:
+                        st.metric(
+                            label="Abnormal Lab Values",
+                            value=len(abnormal_labs),
+                            delta=f"{len(abnormal_labs)} flagged" if abnormal_labs else "All normal"
+                        )
+                    
+                    with col2:
+                        st.metric(
+                            label="Active Medications",
+                            value=num_medications,
+                            delta=f"{num_medications} medications" if num_medications > 0 else "None"
+                        )
+                    
+                    with col3:
+                        st.metric(
+                            label="Drug Interactions",
+                            value=num_ddi,
+                            delta="⚠️ Review needed" if num_ddi > 0 else "✓ None detected"
+                        )
+                    
+                    with col4:
+                        st.metric(
+                            label="Chronic Conditions",
+                            value=num_conditions,
+                            delta=f"{num_conditions} conditions" if num_conditions > 0 else "None"
+                        )
+                    
+                    st.markdown("")
+                    
+                    # Lab Values Dashboard
+                    if labs_data and isinstance(labs_data, list):
+                        st.markdown("### 🔬 Laboratory Analysis")
+                        st.markdown("""
+                        <div style='
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                            margin-bottom: 1rem;
+                        '>
+                            <i class="fas fa-sparkles" style='color: #60a5fa; font-size: 0.9rem;'></i>
+                            <span style='color: #64748b; font-size: 0.9rem;'>AI-analyzed lab trends and critical values</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Create lab values chart
+                        lab_names = []
+                        lab_values = []
+                        lab_statuses = []
+                        lab_colors = []
+                        
+                        for lab in labs_data[:8]:  # Limit to 8 for readability
+                            if isinstance(lab, dict):
+                                test_name = lab.get('test', 'Unknown')
+                                value = lab.get('value', 0)
+                                status = lab.get('status', 'NORMAL')
+                                
+                                lab_names.append(test_name)
+                                lab_values.append(value)
+                                lab_statuses.append(status)
+                                
+                                if status == 'HIGH':
+                                    lab_colors.append('#ef4444')
+                                elif status == 'LOW':
+                                    lab_colors.append('#3b82f6')
+                                else:
+                                    lab_colors.append('#22c55e')
+                        
+                        if lab_names:
+                            fig = go.Figure(data=[
+                                go.Bar(
+                                    x=lab_names,
+                                    y=lab_values,
+                                    marker_color=lab_colors,
+                                    text=[f"{v}" for v in lab_values],
+                                    textposition='outside',
+                                    hovertemplate='<b>%{x}</b><br>Value: %{y}<br>Status: %{customdata}<extra></extra>',
+                                    customdata=lab_statuses
+                                )
+                            ])
+                            
+                            fig.update_layout(
+                                title="",
+                                xaxis_title="Laboratory Test",
+                                yaxis_title="Value",
+                                height=350,
+                                showlegend=False,
+                                plot_bgcolor='rgba(0,0,0,0)',
+                                paper_bgcolor='rgba(0,0,0,0)',
+                                font=dict(family='Inter', size=12),
+                                margin=dict(l=20, r=20, t=20, b=50)
+                            )
+                            
+                            st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Medications and Interactions
+                    col_meds, col_ddi = st.columns(2)
+                    
+                    with col_meds:
+                        st.markdown("### 💊 Current Medications")
+                        st.markdown("""
+                        <div style='
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                            margin-bottom: 1rem;
+                        '>
+                            <i class="fas fa-sparkles" style='color: #60a5fa; font-size: 0.9rem;'></i>
+                            <span style='color: #64748b; font-size: 0.9rem;'>Active medication list</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        if meds_data and isinstance(meds_data, list) and len(meds_data) > 0:
+                            for med in meds_data[:5]:  # Show top 5
+                                if isinstance(med, dict):
+                                    med_name = med.get('name', 'Unknown')
+                                    med_dose = med.get('dose', 'N/A')
+                                    med_freq = med.get('frequency', 'N/A')
+                                    
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #f8fafc;
+                                        border-left: 3px solid #3b82f6;
+                                        padding: 0.75rem;
+                                        margin-bottom: 0.5rem;
+                                        border-radius: 6px;
+                                    '>
+                                        <strong style="color: #1e40af;">{med_name}</strong><br>
+                                        <span style="color: #64748b; font-size: 0.85rem;">{med_dose} - {med_freq}</span>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                        else:
+                            st.info("No active medications recorded")
+                    
+                    with col_ddi:
+                        st.markdown("### ⚠️ Drug Interactions")
+                        st.markdown("""
+                        <div style='
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                            margin-bottom: 1rem;
+                        '>
+                            <i class="fas fa-sparkles" style='color: #60a5fa; font-size: 0.9rem;'></i>
+                            <span style='color: #64748b; font-size: 0.9rem;'>Detected interactions</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        if ddi_data and isinstance(ddi_data, list) and len(ddi_data) > 0:
+                            for interaction in ddi_data[:3]:  # Show top 3
+                                if isinstance(interaction, dict):
+                                    drug1 = interaction.get('drug1', 'Unknown')
+                                    drug2 = interaction.get('drug2', 'Unknown')
+                                    severity = interaction.get('severity', 'Unknown')
+                                    
+                                    severity_color = {
+                                        'HIGH': '#ef4444',
+                                        'MODERATE': '#f59e0b',
+                                        'LOW': '#eab308'
+                                    }.get(severity.upper(), '#64748b')
+                                    
+                                    st.markdown(f"""
+                                    <div style='
+                                        background: #fef2f2;
+                                        border-left: 3px solid {severity_color};
+                                        padding: 0.75rem;
+                                        margin-bottom: 0.5rem;
+                                        border-radius: 6px;
+                                    '>
+                                        <strong style="color: #991b1b;">{drug1} + {drug2}</strong><br>
+                                        <span style="color: #7f1d1d; font-size: 0.85rem;">Severity: {severity}</span>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                        else:
+                            st.success("✓ No drug interactions detected")
+                    
+                    # AI-Generated Insights
+                    st.markdown("")
+                    st.markdown("### ✨ AI-Generated Clinical Insights")
+                    st.markdown("""
+                    <div style='
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5rem;
+                        margin-bottom: 1rem;
+                    '>
+                        <i class="fas fa-sparkles" style='color: #3b82f6; font-size: 1rem; animation: sparkle 2s ease-in-out infinite;'></i>
+                        <span style='color: #64748b; font-size: 0.9rem;'>Automated analysis of patient data patterns</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    insights = []
+                    
+                    # Generate insights based on data
+                    if abnormal_labs:
+                        high_labs = [lab for lab in abnormal_labs if lab.get('status') == 'HIGH']
+                        low_labs = [lab for lab in abnormal_labs if lab.get('status') == 'LOW']
+                        
+                        if high_labs:
+                            insight = f"🔴 **{len(high_labs)} elevated lab values** detected requiring clinical attention"
+                            insights.append(insight)
+                        
+                        if low_labs:
+                            insight = f"🔵 **{len(low_labs)} low lab values** identified that may need monitoring"
+                            insights.append(insight)
+                    
+                    if num_medications > 5:
+                        insights.append(f"💊 **Polypharmacy alert**: Patient on {num_medications} medications - review for deprescribing opportunities")
+                    
+                    if num_ddi > 0:
+                        insights.append(f"⚠️ **{num_ddi} drug interaction(s)** detected - review medication regimen")
+                    
+                    if num_conditions >= 3:
+                        insights.append(f"🏥 **Multiple comorbidities** ({num_conditions} conditions) - consider integrated care approach")
+                    
+                    # Check for specific conditions
+                    if labs_data:
+                        creatinine_lab = next((lab for lab in labs_data if 'creatinine' in lab.get('test', '').lower()), None)
+                        if creatinine_lab and creatinine_lab.get('status') == 'HIGH':
+                            insights.append("🫘 **Renal function concern**: Elevated creatinine suggests monitoring kidney function")
+                        
+                        glucose_lab = next((lab for lab in labs_data if 'glucose' in lab.get('test', '').lower()), None)
+                        if glucose_lab and glucose_lab.get('status') == 'HIGH':
+                            insights.append("🍬 **Glucose management**: Elevated glucose levels detected - consider diabetes management review")
+                    
+                    if not insights:
+                        insights.append("✅ **Baseline assessment**: No critical findings requiring immediate attention")
+                    
+                    # Display insights
+                    for insight in insights:
+                        st.markdown("""
+                        <div style='
+                            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                            border-left: 4px solid #3b82f6;
+                            padding: 1rem;
+                            margin-bottom: 0.75rem;
+                            border-radius: 8px;
+                        '>
+                        """, unsafe_allow_html=True)
+                        st.markdown(insight)
+                        st.markdown("</div>", unsafe_allow_html=True)
+                    
+                    # Risk Assessment Summary
+                    st.markdown("")
+                    st.markdown("### 🎯 Risk Assessment Summary")
+                    
+                    risk_factors = []
+                    if abnormal_labs:
+                        risk_factors.append("Abnormal laboratory values")
+                    if num_ddi > 0:
+                        risk_factors.append("Drug interactions present")
+                    if num_medications > 5:
+                        risk_factors.append("Polypharmacy")
+                    if num_conditions >= 3:
+                        risk_factors.append("Multiple comorbidities")
+                    
+                    if risk_factors:
+                        risk_level = "HIGH" if len(risk_factors) >= 3 else "MODERATE" if len(risk_factors) >= 2 else "LOW"
+                        risk_color = "#ef4444" if risk_level == "HIGH" else "#f59e0b" if risk_level == "MODERATE" else "#22c55e"
+                        
+                        st.markdown(f"""
+                        <div style='
+                            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+                            border-left: 4px solid {risk_color};
+                            padding: 1.25rem;
+                            border-radius: 12px;
+                            margin-bottom: 1rem;
+                        '>
+                            <div style='display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;'>
+                                <i class="fas fa-sparkles" style='color: {risk_color}; font-size: 1.1rem;'></i>
+                                <strong style='color: #991b1b; font-size: 1.1rem;'>Overall Risk Level: {risk_level}</strong>
+                            </div>
+                            <div style='color: #7f1d1d; font-size: 0.9rem;'>
+                                <strong>Identified Risk Factors:</strong>
+                                <ul style='margin: 0.5rem 0 0 1.5rem; padding: 0;'>
+                                    {''.join([f'<li>{factor}</li>' for factor in risk_factors])}
+                                </ul>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.success("✅ **Low Risk Profile**: No significant risk factors identified in current data")
         
         # ============================================================================
         # DOCTOR DECISION FORM - REMOVED
