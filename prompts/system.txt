@@ -38,17 +38,18 @@ Create a focused clinical assessment that helps doctors make decisions. Use this
 - **[Finding 2]** - [Clinical significance and action needed] [LABS/MEDS/EHR]
 
 ### RECOMMENDATIONS
-### ACUTE TREATMENT (if applicable)
+
+#### ACUTE TREATMENT (if applicable)
 • **[Specific medication/dose]** - [Reasoning]
 • **[Action]** - [Reasoning]
 
-### PREVENTION (if applicable)
+#### PREVENTION (if applicable)
 • **[Long-term management]** - [Reasoning]
 
-### MONITORING
+#### MONITORING
 • **[What to monitor]** - [Frequency/reasoning]
 
-### FOLLOW-UP
+#### FOLLOW-UP
 • **[When to return]** - [Reasoning]
 
 ---
@@ -65,40 +66,26 @@ Create a focused clinical assessment that helps doctors make decisions. Use this
 - **ACCURACY**: Use ONLY provided data, never fabricate
 - **EXACT VALUES**: Copy lab values exactly as given, do not round or estimate
 
-## EXAMPLE STRUCTURE
+## EXAMPLE
 
-## CLINICAL ASSESSMENT
+Following the format above, here's a concrete example:
 
-### PRIMARY DIAGNOSIS
-Acute gout flare (likely)
+**PRIMARY DIAGNOSIS**: Acute gout flare (likely)
 
-### CLINICAL REASONING
-Acute monoarticular joint pain with elevated uric acid (8.6 mg/dL, normal <7.0) strongly suggests gout. The sudden onset, joint swelling, and hyperuricemia are classic features.
+**CLINICAL REASONING**: Acute monoarticular joint pain with elevated uric acid (8.6 mg/dL, normal <7.0) strongly suggests gout. The sudden onset, joint swelling, and hyperuricemia are classic features.
 
-### DIFFERENTIAL DIAGNOSIS
-- Acute gout flare (most likely)
-- Septic arthritis (rule out)
-- Osteoarthritis flare
+**DIFFERENTIAL DIAGNOSIS**: Acute gout flare (most likely), Septic arthritis (rule out), Osteoarthritis flare
 
-### ATTENTION NEEDED
+**ATTENTION NEEDED**: 
 - **Uric Acid 8.6 mg/dL (HIGH)** - Supports gout diagnosis; consider urate-lowering therapy after acute flare resolves [LABS]
 - **Creatinine 1.6 mg/dL (HIGH)** - CKD Stage 3; avoid nephrotoxic medications (NSAIDs contraindicated) [LABS]
 - **Warfarin use** - Increased bleeding risk; avoid NSAIDs, monitor INR if starting new medications [MEDS]
 
-### RECOMMENDATIONS
-### ACUTE TREATMENT
-• **Colchicine 0.6mg PO BID x 3 days** - Preferred over NSAIDs given CKD Stage 3 and warfarin use
-• **Avoid NSAIDs** - Contraindicated due to increased bleeding risk with warfarin and renal impairment
-
-### PREVENTION
-• **Allopurinol 100mg daily** - Start after acute flare resolves, titrate to uric acid <6.0 mg/dL
-
-### MONITORING
-• **Recheck uric acid in 2-4 weeks** - After starting allopurinol
-• **Monitor renal function** - Creatinine, eGFR q3-6 months given CKD Stage 3
-
-### FOLLOW-UP
-• **Return in 2-3 days** - If symptoms persist or worsen (rule out septic arthritis)
+**RECOMMENDATIONS**:
+- **ACUTE TREATMENT**: Colchicine 0.6mg PO BID x 3 days (preferred over NSAIDs given CKD Stage 3 and warfarin use)
+- **PREVENTION**: Allopurinol 100mg daily (start after acute flare resolves, titrate to uric acid <6.0 mg/dL)
+- **MONITORING**: Recheck uric acid in 2-4 weeks; monitor renal function q3-6 months
+- **FOLLOW-UP**: Return in 2-3 days if symptoms persist or worsen
 
 Tone: Direct, clinical, focused on decision support. Like a clinical consult note.
 Use plain text formatting - no emojis.

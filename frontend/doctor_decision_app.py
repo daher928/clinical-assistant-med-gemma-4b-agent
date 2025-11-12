@@ -774,7 +774,7 @@ def main():
         # Create patient options for dropdown
         patient_options = {}
         for patient in patients:
-            display_name = f"{patient['patient_id']} - {patient['name']} ({patient['demographics']['age']}yo {patient['demographics']['gender']})"
+            display_name = f"{patient['patient_id']} - {patient['name']} ({patient['demographics']['age']}yo)"
             patient_options[display_name] = patient['patient_id']
         
         col1, col2 = st.columns([3, 1])
@@ -791,7 +791,7 @@ def main():
         with col2:
             # Demo button for P001 (Ibuprofen scenario)
             if st.button("🎯 Demo P001", help="Load P001 for Ibuprofen safety demo"):
-                selected_patient_display = "P001 - John Smith (68yo Male)"
+                selected_patient_display = "P001 - John Smith (68yo)"
         
         selected_patient_id = patient_options[selected_patient_display]
         

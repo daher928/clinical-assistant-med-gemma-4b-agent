@@ -5,6 +5,8 @@ Modern medical-grade UI with professional design.
 Run with: streamlit run frontend/app.py
 """
 import streamlit as st
+import streamlit.components.v1 as components
+
 import sys
 import os
 import json
@@ -1005,6 +1007,71 @@ def transcribe_audio_with_gemini(audio_bytes, mime_type="audio/wav"):
         st.error(f"Transcription error: {str(e)}")
         return None
 
+def ask_gemini_question(question: str, patient_context: dict, decision_result: str) -> str:
+    """
+    Ask a follow-up question to Gemini LLM with patient and decision context.
+    
+    Args:
+        question: User's question
+        patient_context: Patient information dict
+        decision_result: Clinical decision result text
+    
+    Returns:
+        Gemini's response text, or None if error
+    """
+    try:
+        # Check if API key is configured
+        if not Config.GEMINI_API_KEY:
+            return None
+        
+        # Import Gemini client
+        from google import genai
+        
+        # Initialize client with API key
+        client = genai.Client(api_key=Config.GEMINI_API_KEY)
+        
+        # Build context prompt
+        patient_info = f"""
+Patient Information:
+- ID: {patient_context.get('patient_id', 'Unknown')}
+- Name: {patient_context.get('name', 'Unknown')}
+- Age: {patient_context.get('age', 'Unknown')}
+- Gender: {patient_context.get('gender', 'Unknown')}
+- Conditions: {', '.join(patient_context.get('conditions', []))}
+"""
+        
+        # Limit context to avoid token limits
+        decision_summary = decision_result[:2000] if len(decision_result) > 2000 else decision_result
+        
+        context_prompt = f"""You are a clinical assistant helping a healthcare provider understand a patient case.
+
+{patient_info}
+
+Clinical Decision Summary:
+{decision_summary}
+
+The healthcare provider is asking a follow-up question about this case. Please provide a helpful, concise answer based on the patient information and clinical summary above.
+
+Question: {question}
+
+Answer:"""
+        
+        # Call Gemini API
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[context_prompt]
+        )
+        
+        # Extract response text
+        if response and hasattr(response, 'text'):
+            return response.text.strip()
+        else:
+            return None
+            
+    except Exception as e:
+        st.error(f"Chat error: {str(e)}")
+        return None
+
 # ============================================================================
 # PATIENT SELECTION DASHBOARD
 # ============================================================================
@@ -1025,12 +1092,12 @@ def transform_patient_data(patients_list):
     """Transform patient database format to frontend format"""
     patient_data = {}
     default_complaints = {
-        "P001": "Fatigue and dizziness for 2 weeks. Reports decreased appetite.",
-        "P002": "Increased shortness of breath and wheezing for 3 days.",
-        "P003": "Chest discomfort and irregular heartbeat.",
-        "P004": "Routine prenatal care visit.",
-        "P005": "Increased shortness of breath, cough with sputum, and wheezing.",
-        "P006": "knee pain and swelling for 3 weeks"  # Omar - no default complaint, user will add
+        "P001": "",
+        "P002": "",
+        "P003": "",
+        "P004": "",
+        "P005": "",
+        "P006": ""
     }
     
     for patient in patients_list:
@@ -1069,7 +1136,7 @@ if not patient_data:
             "gender": "Male",
             "conditions": ["CKD Stage 3b", "T2DM", "HTN", "Anemia"],
             "risk_level": "HIGH",
-            "default_complaint": "Fatigue and dizziness for 2 weeks. Reports decreased appetite."
+            "default_complaint": ""
         },
         "P002": {
             "name": "Jane Smith",
@@ -1077,7 +1144,7 @@ if not patient_data:
             "gender": "Female",
             "conditions": ["Asthma", "Migraines", "Anxiety"],
             "risk_level": "MEDIUM",
-            "default_complaint": "Increased shortness of breath and wheezing for 3 days."
+            "default_complaint": ""
         }
     }
 
@@ -1588,7 +1655,7 @@ st.markdown("")
 def format_patient_option(pid):
     data = patient_data[pid]
     risk_emoji = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(data['risk_level'], "⚪")
-    return f"{risk_emoji} {pid} - {data['name']} ({data['age']}yo {data['gender']}) - {', '.join(data['conditions'][:2])}"
+    return f"{risk_emoji} {pid} - {data['name']} ({data['age']}yo {data['gender']})"
 
 # Dropdown selector
 patient_id = st.selectbox(
@@ -1747,8 +1814,9 @@ if run_button:
         # ============================================================================
         
         st.markdown("")
+        # Progress section header with ID for scrolling
         st.markdown("""
-        <div style='display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;'>
+        <div id="progress-section" style='display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;'>
             <i class="fas fa-sparkles" style='color: #3b82f6; font-size: 1.5rem; animation: sparkle 2s ease-in-out infinite;'></i>
             <h3 style='margin: 0; display: inline;'>AI-Powered Clinical Analysis in Progress</h3>
             <i class="fas fa-sparkles" style='color: #3b82f6; font-size: 1.5rem; animation: sparkle 2s ease-in-out infinite 0.5s;'></i>
@@ -1760,6 +1828,37 @@ if run_button:
         }
         </style>
         """, unsafe_allow_html=True)
+        
+        # Auto-scroll script using components.v1.html to properly execute JavaScript
+        # This ensures the script executes instead of being rendered as text
+        components.html("""
+        <script>
+        (function() {
+            function scrollToProgress() {
+                const element = document.getElementById('progress-section');
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    return true;
+                }
+                return false;
+            }
+            
+            // Try immediately
+            if (!scrollToProgress()) {
+                // If element not found, wait for DOM to be ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', scrollToProgress);
+                } else {
+                    // DOM already loaded, try with a small delay
+                    setTimeout(scrollToProgress, 200);
+                }
+            }
+            
+            // Also try after a short delay as fallback
+            setTimeout(scrollToProgress, 300);
+        })();
+        </script>
+        """, height=0)
         st.markdown("<p style='color: #64748b; margin-bottom: 1.5rem;'>The AI assistant is reviewing patient information and generating clinical insights.</p>", unsafe_allow_html=True)
         
         # Progress display container
@@ -1998,7 +2097,9 @@ if run_button:
                 st.session_state['logs'] = logs
                 st.session_state['patient_id'] = patient_id
                 st.session_state['complaint'] = complaint
-                
+                                # Clear chat history for new analysis
+                if 'chat_history' in st.session_state:
+                    st.session_state['chat_history'] = []
                 # Success notification
                 st.markdown("""
                 <div style='
@@ -2110,6 +2211,124 @@ if run_button:
                 st.markdown("")
                 st.markdown("---")
                 st.markdown("#### 💬 Ask Follow-Up Questions")
+                
+                # Initialize chat history in session state
+                if 'chat_history' not in st.session_state:
+                    st.session_state.chat_history = []
+                
+                # Display chat history
+                if st.session_state.chat_history:
+                    import html
+                    st.markdown("""
+<div style='
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+'>
+""", unsafe_allow_html=True)
+                    
+                    for i, (role, message) in enumerate(st.session_state.chat_history):
+                        if role == 'user':
+                            # Escape HTML for user messages to prevent XSS
+                            escaped_message = html.escape(str(message))
+                            st.markdown(f"""
+<div style='
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+'>
+    <strong style="color: #1e40af;">You:</strong><br>
+    <span style="color: #334155;">{escaped_message}</span>
+</div>
+""", unsafe_allow_html=True)
+                        else:
+                            # For assistant messages, render markdown properly
+                            message_str = str(message)
+                            st.markdown("""
+<div style='
+    background: #f0fdf4;
+    border-left: 4px solid #22c55e;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+'>
+    <strong style="color: #166534;">Assistant:</strong><br>
+    <div style="color: #334155; margin-top: 0.5rem;">
+""", unsafe_allow_html=True)
+                            # Render markdown content
+                            st.markdown(message_str)
+                            st.markdown("""
+    </div>
+</div>
+""", unsafe_allow_html=True)
+                    
+                    st.markdown("</div>", unsafe_allow_html=True)
+                
+                # Chat input
+                col_input, col_send = st.columns([5, 1])
+                
+                with col_input:
+                    user_question = st.text_input(
+                        "Ask a question about this case",
+                        placeholder="e.g., What are the key risk factors?",
+                        label_visibility="collapsed",
+                        key="chat_input"
+                    )
+                
+                with col_send:
+                    send_button = st.button("Send", type="primary", use_container_width=True)
+                
+                # Handle question submission
+                if send_button and user_question.strip():
+                    # Add user question to chat history
+                    st.session_state.chat_history.append(('user', user_question))
+                    
+                    # Get patient context
+                    current_patient_id = st.session_state.get('patient_id', patient_id)
+                    patient_info = patient_data.get(current_patient_id, {})
+                    patient_context = {
+                        'patient_id': current_patient_id,
+                        'name': patient_info.get('name', 'Unknown'),
+                        'age': patient_info.get('age', 'Unknown'),
+                        'gender': patient_info.get('gender', 'Unknown'),
+                        'conditions': patient_info.get('conditions', [])
+                    }
+                    
+                    # Get decision result
+                    decision_result = st.session_state.get('result', display_result)
+                    if not decision_result or decision_result == 'No results available':
+                        decision_result = "No clinical summary available yet."
+                    
+                    # Show loading state
+                    with st.spinner("Thinking..."):
+                        # Call Gemini
+                        response = ask_gemini_question(
+                            user_question,
+                            patient_context,
+                            decision_result
+                        )
+                    
+                    if response:
+                        # Add assistant response to chat history
+                        st.session_state.chat_history.append(('assistant', response))
+                        st.rerun()
+                    else:
+                        error_msg = "Sorry, I couldn't generate a response. Please check if GEMINI_API_KEY is configured."
+                        st.session_state.chat_history.append(('assistant', error_msg))
+                        st.rerun()
+                
+                # Clear chat button
+                if st.session_state.chat_history:
+                    if st.button("🗑️ Clear Chat", use_container_width=True):
+                        st.session_state.chat_history = []
+                        st.rerun()
         
         # ============================================================================
         # DOCTOR DECISION FORM - REMOVED

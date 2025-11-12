@@ -1,0 +1,20 @@
+{
+  "patient_id": "P003",
+  "studies": [
+    {
+      "type": "Chest X-Ray",
+      "date": "2024-12-10",
+      "findings": "Heart size within normal limits. No acute cardiopulmonary process. Lungs are clear bilaterally. No pleural effusion or pneumothorax.",
+      "impression": "Normal chest X-ray",
+      "radiologist": "Dr. Lee"
+    },
+    {
+      "type": "Echocardiogram",
+      "date": "2024-11-15",
+      "findings": "Mild left atrial enlargement. Ejection fraction 55%. Mild mitral valve regurgitation. No significant wall motion abnormalities.",
+      "impression": "Mild left atrial enlargement, consistent with atrial fibrillation. Overall cardiac function preserved.",
+      "radiologist": "Dr. Chen (Cardiology)"
+    }
+  ]
+}
+

@@ -87,43 +87,59 @@
     },
     {
       "patient_id": "P003",
-      "name": "Michael Brown",
+      "name": "Omar A.",
       "demographics": {
         "age": 72,
         "gender": "Male"
       },
       "conditions": [
-        "Atrial Fibrillation",
-        "Hypertension",
-        "Osteoporosis"
+        "Type 2 Diabetes (over 20 years)",
+        "Hypertension (controlled with medication)",
+        "Chronic Kidney Disease Stage 3",
+        "Gout (past attacks - toe and elbow)",
+        "Mild heart rhythm issue",
+        "History of gallbladder removal (age 58)"
       ],
       "allergies": [
-        "Warfarin",
-        "Aspirin"
+        "Penicillin (rash)"
       ],
       "medications": [
-        "Warfarin 5mg once daily",
-        "Digoxin 0.25mg once daily",
-        "Calcium 600mg twice daily"
+        "Metformin (for diabetes)",
+        "Lisinopril (for hypertension)",
+        "Warfarin (blood thinner for heart rhythm)"
       ],
       "labs": {
-        "INR": 2.5,
-        "eGFR": 65,
-        "Creatinine": 1.2,
-        "Calcium": 9.8
+        "eGFR": 42,
+        "Creatinine": 1.6,
+        "Uric Acid": 8.6,
+        "HbA1c": 7.1,
+        "BUN": 24,
+        "Glucose": 128,
+        "INR": 2.3
       },
       "vital_signs": {
-        "blood_pressure": "130/80",
-        "heart_rate": 95,
+        "blood_pressure": "138/80",
+        "heart_rate": 88,
         "temperature": 98.2,
-        "weight": 170
+        "weight": 175,
+        "oxygen_saturation": 96
       },
-      "visit_reason": "Chest pain evaluation",
+      "visit_reason": "Fatigue and decreased activity",
       "current_symptoms": [
-        "Chest discomfort",
-        "Shortness of breath",
-        "Irregular heartbeat"
-      ]
+        "Fatigue (lately skipping daily walks)",
+        "Decreased energy"
+      ],
+      "personal_profile": {
+        "occupation": "Retired history teacher",
+        "living_situation": "Lives with wife, Leila",
+        "personality": "Calm, witty, loves old radio shows",
+        "activity": "Tries to walk daily, lately skips because of fatigue"
+      },
+      "family_history": {
+        "father": "Kidney stones",
+        "brother": "Diabetes",
+        "mother": "Lived to 90 with heart disease"
+      }
     },
     {
       "patient_id": "P004",
@@ -205,34 +221,43 @@
     },
     {
       "patient_id": "P006",
-      "name": "Omar H.",
+      "name": "Michael Brown",
       "demographics": {
         "age": 72,
         "gender": "Male"
       },
       "conditions": [
-        "Type 2 Diabetes",
-        "High blood pressure",
-        "Chronic kidney disease (stage 3)"
+        "Atrial Fibrillation",
+        "Hypertension",
+        "Osteoporosis"
       ],
       "allergies": [
-        "Penicillin (rash)"
+        "Warfarin",
+        "Aspirin"
       ],
       "medications": [
-        "Metformin",
-        "Lisinopril",
-        "Warfarin (blood thinner)"
+        "Warfarin 5mg once daily",
+        "Digoxin 0.25mg once daily",
+        "Calcium 600mg twice daily"
       ],
       "labs": {
-        "Uric Acid": 8.6,
-        "Creatinine": 1.6
+        "INR": 2.5,
+        "eGFR": 65,
+        "Creatinine": 1.2,
+        "Calcium": 9.8
       },
       "vital_signs": {
-        "blood_pressure": "138/80",
-        "heart_rate": 88,
+        "blood_pressure": "130/80",
+        "heart_rate": 95,
         "temperature": 98.2,
-        "oxygen_saturation": 96
-      }
+        "weight": 170
+      },
+      "visit_reason": "Chest pain evaluation",
+      "current_symptoms": [
+        "Chest discomfort",
+        "Shortness of breath",
+        "Irregular heartbeat"
+      ]
     }
   ]
 }

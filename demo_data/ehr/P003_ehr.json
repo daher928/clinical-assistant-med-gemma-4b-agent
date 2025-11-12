@@ -1,0 +1,90 @@
+{
+  "patient_id": "P003",
+  "demographics": {
+    "name": "Omar H.",
+    "age": 72,
+    "gender": "Male",
+    "dob": "1952-03-20"
+  },
+  "conditions": [
+    {
+      "name": "Type 2 Diabetes Mellitus",
+      "icd10": "E11.9",
+      "onset": "2004-08-15",
+      "status": "active",
+      "notes": "Over 20 years duration"
+    },
+    {
+      "name": "Essential Hypertension",
+      "icd10": "I10",
+      "onset": "2003-11-10",
+      "status": "active",
+      "notes": "Controlled with medication"
+    },
+    {
+      "name": "Chronic Kidney Disease Stage 3",
+      "icd10": "N18.3",
+      "onset": "2015-04-22",
+      "status": "active",
+      "notes": "Mild CKD"
+    },
+    {
+      "name": "Gout",
+      "icd10": "M10.9",
+      "onset": "2018-06-10",
+      "status": "past",
+      "notes": "Past attacks in toe and elbow"
+    },
+    {
+      "name": "Atrial Fibrillation",
+      "icd10": "I48.91",
+      "onset": "2018-05-15",
+      "status": "active",
+      "notes": "Mild heart rhythm issue, on Warfarin"
+    },
+    {
+      "name": "Status post cholecystectomy",
+      "icd10": "Z90.89",
+      "onset": "2010-03-15",
+      "status": "past",
+      "notes": "Gallbladder removal at age 58"
+    }
+  ],
+  "allergies": [
+    {
+      "allergen": "Penicillin",
+      "reaction": "Rash",
+      "severity": "moderate"
+    }
+  ],
+  "vitals": {
+    "last_visit": "2025-01-15",
+    "bp": "138/80 mmHg",
+    "hr": "88 bpm",
+    "temp": "98.2°F",
+    "weight": "175 lbs",
+    "height": "5'9\"",
+    "bmi": 25.8
+  },
+  "social_history": {
+    "occupation": "Retired history teacher",
+    "living_situation": "Lives with wife, Leila",
+    "personality": "Calm, witty, loves old radio shows",
+    "smoking": "Never",
+    "alcohol": "No alcohol use",
+    "exercise": "Tries to walk daily, lately skips because of fatigue"
+  },
+  "family_history": {
+    "father": "Kidney stones",
+    "brother": "Diabetes",
+    "mother": "Lived to 90 with heart disease"
+  },
+  "surgical_history": [
+    {
+      "procedure": "Cholecystectomy",
+      "date": "2010-03-15",
+      "age_at_surgery": 58
+    }
+  ]
+}
+
