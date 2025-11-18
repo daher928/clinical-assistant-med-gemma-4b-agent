@@ -86,30 +86,41 @@ class SafetyMonitorAgent:
         emit("SAFETY_MONITOR_STARTED")
         
         try:
-            # Extract prescriptions from doctor decision
+            # Extract diagnosis and prescriptions from doctor decision
+            diagnosis = doctor_decision.get('diagnosis', '').strip()
             prescriptions = doctor_decision.get('prescriptions', [])
+            
+            # Validate diagnosis first
+            if diagnosis:
+                emit("SAFETY_MONITOR_VALIDATING_DIAGNOSIS")
+                diagnosis_warnings = self._check_diagnosis(
+                    diagnosis, patient_context, emit
+                )
+            else:
+                diagnosis_warnings = []
+                emit("SAFETY_MONITOR_NO_DIAGNOSIS")
+            
             if not prescriptions:
                 emit("SAFETY_MONITOR_NO_PRESCRIPTIONS")
                 return {
                     'status': 'no_prescriptions',
-                    'warnings': [],
-                    'summary': 'No prescriptions to validate'
+                    'warnings': diagnosis_warnings,
+                    'summary': 'No prescriptions to validate' + (' (diagnosis validated)' if diagnosis else '')
                 }
             
             emit(f"SAFETY_MONITOR_VALIDATING_{len(prescriptions)}_PRESCRIPTIONS")
             
             # Run comprehensive safety checks
             safety_results = self._run_safety_checks(
-                patient_id, prescriptions, patient_context, emit
+                patient_id, prescriptions, patient_context, diagnosis, emit
             )
             
-            # Use LLM for intelligent reasoning on complex cases
-            if safety_results['warnings']:
-                emit("SAFETY_MONITOR_LLM_REASONING")
-                llm_insights = self._llm_safety_reasoning(
-                    prescriptions, safety_results, patient_context, emit
-                )
-                safety_results['llm_insights'] = llm_insights
+            # Add diagnosis warnings to overall warnings
+            safety_results['warnings'].extend(diagnosis_warnings)
+            
+            # Skip LLM reasoning - use rule-based analysis only
+            # LLM reasoning disabled for faster execution
+            safety_results['llm_insights'] = []
             
             # Generate safety summary
             summary = self._generate_safety_summary(safety_results)
@@ -134,7 +145,7 @@ class SafetyMonitorAgent:
             }
     
     def _run_safety_checks(self, patient_id: str, prescriptions: List[Dict], 
-                          patient_context: Dict, emit: Callable) -> Dict:
+                          patient_context: Dict, diagnosis: str, emit: Callable) -> Dict:
         """Run all safety checks on prescriptions."""
         warnings = []
         recommendations = []
@@ -196,6 +207,13 @@ class SafetyMonitorAgent:
                 patient_id, drug_name, patient_context
             )
             warnings.extend(history_warnings)
+            
+            # 8. Treatment-Diagnosis Alignment Check
+            if diagnosis:
+                alignment_warnings = self._check_treatment_diagnosis_alignment(
+                    drug_name, diagnosis, patient_context
+                )
+                warnings.extend(alignment_warnings)
         
         # Generate recommendations and alternatives
         if warnings:
@@ -207,6 +225,121 @@ class SafetyMonitorAgent:
             'recommendations': recommendations,
             'alternatives': alternatives
         }
+    
+    def _check_diagnosis(self, diagnosis: str, patient_context: Dict, emit: Callable) -> List[SafetyWarning]:
+        """Check if diagnosis is consistent with patient data."""
+        warnings = []
+        
+        # Get patient data
+        ehr = patient_context.get('EHR', {})
+        conditions = ehr.get('conditions', [])
+        labs = patient_context.get('LABS', {}).get('results', [])
+        demographics = ehr.get('demographics', {})
+        
+        diagnosis_lower = diagnosis.lower()
+        
+        # Check if diagnosis aligns with existing conditions
+        condition_names = [c.get('name', '').lower() if isinstance(c, dict) else str(c).lower() for c in conditions]
+        
+        # Common diagnosis-condition mismatches
+        mismatch_patterns = {
+            'diabetes': ['diabetes', 'diabetic', 'dm', 't2dm', 'type 2'],
+            'hypertension': ['hypertension', 'htn', 'high blood pressure'],
+            'gout': ['gout', 'hyperuricemia'],
+            'ckd': ['ckd', 'chronic kidney', 'kidney disease', 'renal'],
+            'asthma': ['asthma', 'copd', 'respiratory'],
+            'heart failure': ['heart failure', 'chf', 'cardiac']
+        }
+        
+        # Check for potential mismatches
+        for pattern_key, pattern_terms in mismatch_patterns.items():
+            if any(term in diagnosis_lower for term in pattern_terms):
+                # Check if patient has related conditions
+                has_related = any(
+                    any(term in cond for term in pattern_terms) 
+                    for cond in condition_names
+                )
+                if not has_related:
+                    # Check labs for supporting evidence
+                    lab_support = False
+                    if 'diabetes' in pattern_key:
+                        lab_support = any('glucose' in str(lab.get('test', '')).lower() or 'hba1c' in str(lab.get('test', '')).lower() for lab in labs)
+                    elif 'gout' in pattern_key:
+                        lab_support = any('uric acid' in str(lab.get('test', '')).lower() for lab in labs)
+                    elif 'ckd' in pattern_key:
+                        lab_support = any('creatinine' in str(lab.get('test', '')).lower() or 'egfr' in str(lab.get('test', '')).lower() for lab in labs)
+                    
+                    if not lab_support:
+                        warnings.append(SafetyWarning(
+                            category='diagnosis_validation',
+                            severity='moderate',
+                            message=f"Diagnosis '{diagnosis}' may not align with patient's documented conditions. Consider reviewing patient history.",
+                            drug=None,
+                            details=f"Patient conditions: {', '.join([c.get('name', str(c)) if isinstance(c, dict) else str(c) for c in conditions[:3]])}"
+                        ))
+        
+        # Check lab values for diagnosis support
+        if labs:
+            abnormal_labs = [lab for lab in labs if lab.get('status') in ['HIGH', 'LOW']]
+            if abnormal_labs and ('normal' in diagnosis_lower or 'healthy' in diagnosis_lower):
+                warnings.append(SafetyWarning(
+                    category='diagnosis_validation',
+                    severity='moderate',
+                    message=f"Diagnosis may not align with abnormal lab values present.",
+                    drug=None,
+                    details=f"Found {len(abnormal_labs)} abnormal lab value(s)"
+                ))
+        
+        return warnings
+    
+    def _check_treatment_diagnosis_alignment(self, drug_name: str, diagnosis: str, 
+                                            patient_context: Dict) -> List[SafetyWarning]:
+        """Check if prescribed treatment aligns with diagnosis."""
+        warnings = []
+        
+        diagnosis_lower = diagnosis.lower()
+        drug_lower = drug_name.lower()
+        
+        # Common treatment-diagnosis mappings
+        treatment_mappings = {
+            'diabetes': ['metformin', 'insulin', 'glipizide', 'glimepiride', 'sitagliptin'],
+            'hypertension': ['lisinopril', 'amlodipine', 'losartan', 'atenolol', 'hydrochlorothiazide'],
+            'gout': ['allopurinol', 'colchicine', 'indomethacin', 'naproxen'],
+            'ckd': ['lisinopril', 'losartan', 'furosemide'],
+            'asthma': ['albuterol', 'salmeterol', 'fluticasone', 'montelukast'],
+            'infection': ['amoxicillin', 'azithromycin', 'ciprofloxacin', 'doxycycline'],
+            'pain': ['ibuprofen', 'acetaminophen', 'naproxen', 'tramadol']
+        }
+        
+        # Check if drug matches diagnosis
+        diagnosis_matched = False
+        for condition, treatments in treatment_mappings.items():
+            if condition in diagnosis_lower:
+                if any(treatment in drug_lower for treatment in treatments):
+                    diagnosis_matched = True
+                    break
+        
+        # If diagnosis is specific but drug doesn't match common treatments
+        if not diagnosis_matched and diagnosis.strip():
+            # Check if it's a common mismatch
+            common_mismatches = [
+                ('diabetes', 'ibuprofen'),  # NSAIDs not typically first-line for diabetes
+                ('hypertension', 'metformin'),  # Metformin is for diabetes, not hypertension
+                ('gout', 'aspirin'),  # Aspirin can worsen gout
+            ]
+            
+            for cond, drug in common_mismatches:
+                if cond in diagnosis_lower and drug in drug_lower:
+                    warnings.append(SafetyWarning(
+                        category='treatment_diagnosis_mismatch',
+                        severity='high',
+                        message=f"Prescribed '{drug_name}' may not be appropriate for diagnosis '{diagnosis}'",
+                        drug=drug_name,
+                        details=f"Consider reviewing treatment guidelines for {diagnosis}"
+                    ))
+                    break
+        
+        return warnings
     
     def _check_drug_interactions(self, new_drug: str, current_meds: List[Dict], 
                                  patient_context: Dict) -> List[SafetyWarning]:
@@ -319,10 +452,23 @@ class SafetyMonitorAgent:
         for contraindication in contraindications:
             contraindication_condition = contraindication.get('condition', '').lower()
             
+            # Enhanced condition matching for renal/kidney conditions
+            def matches_condition(contra_cond: str, patient_cond: str) -> bool:
+                """Check if contraindication condition matches patient condition."""
+                # Direct substring match
+                if contra_cond in patient_cond or patient_cond in contra_cond:
+                    return True
+                # Special handling for renal/kidney conditions
+                renal_keywords = ['renal', 'kidney', 'ckd', 'nephro']
+                contra_has_renal = any(kw in contra_cond for kw in renal_keywords)
+                patient_has_renal = any(kw in patient_cond for kw in renal_keywords)
+                if contra_has_renal and patient_has_renal:
+                    return True
+                return False
+            
             # Check if patient has matching condition
             for condition in condition_names:
-                if (contraindication_condition in condition or 
-                    condition in contraindication_condition):
+                if matches_condition(contraindication_condition, condition):
                     
                     # Check lab-based contraindications
                     lab_check = contraindication.get('lab_check')

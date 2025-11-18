@@ -401,13 +401,29 @@ SAFETY_STEP_DEFINITIONS = {
         'phase_name': 'Initialization',
         'order': 1
     },
+    'SAFETY_MONITOR_VALIDATING_DIAGNOSIS': {
+        'title': 'Validating Diagnosis',
+        'icon': 'fa-stethoscope',
+        'description': 'Checking diagnosis against patient data and conditions',
+        'phase': 1,
+        'phase_name': 'Initialization',
+        'order': 2
+    },
+    'SAFETY_MONITOR_NO_DIAGNOSIS': {
+        'title': 'No Diagnosis Provided',
+        'icon': 'fa-info-circle',
+        'description': 'Diagnosis field is empty',
+        'phase': 1,
+        'phase_name': 'Initialization',
+        'order': 2
+    },
     'SAFETY_CHECKING': {
         'title': 'Checking Prescriptions',
         'icon': 'fa-pills',
         'description': 'Validating each prescription for safety',
         'phase': 1,
         'phase_name': 'Initialization',
-        'order': 2
+        'order': 3
     },
     'SAFETY_MONITOR_DDI_ANALYSIS': {
         'title': 'Drug Interaction Analysis',
@@ -449,21 +465,29 @@ SAFETY_STEP_DEFINITIONS = {
         'phase_name': 'Safety Checks',
         'order': 5
     },
+    'SAFETY_MONITOR_REGULATORY_CHECK': {
+        'title': 'Regulatory Compliance',
+        'icon': 'fa-gavel',
+        'description': 'Checking FDA regulations and drug approvals',
+        'phase': 2,
+        'phase_name': 'Safety Checks',
+        'order': 6
+    },
+    'SAFETY_MONITOR_LITERATURE_REVIEW': {
+        'title': 'Literature Review',
+        'icon': 'fa-book',
+        'description': 'Reviewing pharmacology literature and studies',
+        'phase': 2,
+        'phase_name': 'Safety Checks',
+        'order': 7
+    },
     'SAFETY_MONITOR_EHR_HISTORY_CHECK': {
         'title': 'Historical EHR Review',
         'icon': 'fa-history',
         'description': 'Analyzing patient history patterns',
         'phase': 2,
         'phase_name': 'Safety Checks',
-        'order': 6
-    },
-    'SAFETY_MONITOR_LLM_REASONING': {
-        'title': 'AI Safety Reasoning',
-        'icon': 'fa-brain',
-        'description': 'Using AI to analyze complex safety scenarios',
-        'phase': 3,
-        'phase_name': 'Intelligent Analysis',
-        'order': 1
+        'order': 8
     },
     'SAFETY_MONITOR_FINAL_ASSESSMENT': {
         'title': 'Final Assessment',
@@ -529,8 +553,8 @@ def render_safety_phase_group(phase_num: int, phase_name: str, steps: list, comp
     
     phase_descriptions = {
         1: "Initializing safety monitor and preparing prescription data",
-        2: "Running comprehensive safety checks on all prescriptions",
-        3: "Using AI to analyze complex scenarios and generate recommendations"
+        2: "Running comprehensive safety checks: interactions, contraindications, dosing, guidelines, pharmacology, regulations, and literature review",
+        3: "Generating final safety assessment and recommendations"
     }
     
     description = phase_descriptions.get(phase_num, "")
@@ -571,28 +595,25 @@ def translate_safety_message(message: str) -> dict:
     return None
 
 def render_safety_progress(container, states):
-    """Render safety monitor progress."""
-    phase_1_steps = []
-    phase_2_steps = []
-    phase_3_steps = []
+    """Render safety monitor progress with dynamic phase reordering."""
+    # Phase configuration
+    phase_configs = {
+        1: {'name': 'Initialization', 'steps': [], 'items': [], 'completed': 0},
+        2: {'name': 'Safety Checks', 'steps': [], 'items': [], 'completed': 0},
+        3: {'name': 'Intelligent Analysis', 'steps': [], 'items': [], 'completed': 0}
+    }
     
-    phase_1_completed = 0
-    phase_2_completed = 0
-    phase_3_completed = 0
-    
-    phase_1_items = []
-    phase_2_items = []
-    phase_3_items = []
-    
+    # Collect step data for each phase
     for step_key, step_def in SAFETY_STEP_DEFINITIONS.items():
         state = states.get(step_key, 'pending')
+        phase_num = step_def['phase']
         
         if state == 'pending':
-            phase = step_def['phase']
+            # Check if phase has any activity
             phase_has_activity = any(
                 states.get(k, 'pending') != 'pending' 
                 for k, v in SAFETY_STEP_DEFINITIONS.items() 
-                if v['phase'] == phase
+                if v['phase'] == phase_num
             )
             if not phase_has_activity:
                 continue
@@ -602,30 +623,54 @@ def render_safety_progress(container, states):
         card_html = render_safety_step_card(step_def_copy, state)
         order = step_def.get('order', 999)
         
-        if step_def['phase'] == 1:
-            phase_1_items.append((order, card_html, state))
-            if state == 'completed':
-                phase_1_completed += 1
-        elif step_def['phase'] == 2:
-            phase_2_items.append((order, card_html, state))
-            if state == 'completed':
-                phase_2_completed += 1
-        elif step_def['phase'] == 3:
-            phase_3_items.append((order, card_html, state))
-            if state == 'completed':
-                phase_3_completed += 1
+        phase_configs[phase_num]['items'].append((order, card_html, state))
+        if state == 'completed':
+            phase_configs[phase_num]['completed'] += 1
     
-    phase_1_steps = [html_str for _, html_str, _ in sorted(phase_1_items)]
-    phase_2_steps = [html_str for _, html_str, _ in sorted(phase_2_items)]
-    phase_3_steps = [html_str for _, html_str, _ in sorted(phase_3_items)]
+    # Sort steps within each phase and build phase groups
+    phase_groups = []
+    for phase_num, config in phase_configs.items():
+        if config['items']:
+            config['steps'] = [html_str for _, html_str, _ in sorted(config['items'])]
+            phase_groups.append({
+                'phase_num': phase_num,
+                'name': config['name'],
+                'steps': config['steps'],
+                'completed': config['completed'],
+                'states': [state for _, _, state in config['items']]
+            })
     
+    # Determine phase states and sort: active first, then pending, then completed
+    def get_phase_state(phase_group):
+        """Determine if phase is active, completed, or pending."""
+        states_list = phase_group['states']
+        # Active: has at least one 'active' step
+        if 'active' in states_list:
+            return 'active'
+        # Completed: all steps are 'completed' (no active or pending)
+        if all(s in ['completed', 'skipped'] for s in states_list):
+            return 'completed'
+        # Pending: has pending steps or mix of states
+        return 'pending'
+    
+    # Sort phases: active (priority 0), pending (priority 1), completed (priority 2)
+    def get_sort_priority(phase_group):
+        state = get_phase_state(phase_group)
+        priority_map = {'active': 0, 'pending': 1, 'completed': 2}
+        return priority_map.get(state, 1)
+    
+    # Sort phases by priority, then by phase number for same priority
+    sorted_phases = sorted(phase_groups, key=lambda pg: (get_sort_priority(pg), pg['phase_num']))
+    
+    # Render phases in sorted order
     html_parts = []
-    if phase_1_steps:
-        html_parts.append(render_safety_phase_group(1, 'Initialization', phase_1_steps, phase_1_completed))
-    if phase_2_steps:
-        html_parts.append(render_safety_phase_group(2, 'Safety Checks', phase_2_steps, phase_2_completed))
-    if phase_3_steps:
-        html_parts.append(render_safety_phase_group(3, 'Intelligent Analysis', phase_3_steps, phase_3_completed))
+    for phase_group in sorted_phases:
+        html_parts.append(render_safety_phase_group(
+            phase_group['phase_num'],
+            phase_group['name'],
+            phase_group['steps'],
+            phase_group['completed']
+        ))
     
     container.markdown('\n'.join(html_parts), unsafe_allow_html=True)
 
@@ -705,7 +750,7 @@ def run_safety_check(doctor_decision, patient_data, progress_container=None, ste
                         
                         # Render progress
                         render_safety_progress(progress_container, step_states)
-                        time.sleep(0.3)  # Small delay for visual effect
+                        time.sleep(0.75)  # Small delay for visual effect
         
         # Run the actual safety monitor agent
         safety_result = run_safety_monitor(patient_id, doctor_decision, patient_context, emit)
@@ -788,10 +833,6 @@ def main():
                 key="patient_selector"
             )
         
-        with col2:
-            # Demo button for P001 (Ibuprofen scenario)
-            if st.button("🎯 Demo P001", help="Load P001 for Ibuprofen safety demo"):
-                selected_patient_display = "P001 - John Smith (68yo)"
         
         selected_patient_id = patient_options[selected_patient_display]
         
@@ -834,6 +875,20 @@ def main():
     
     # Main content
     st.markdown("### 📋 Treatment Plan")
+    
+    # Diagnosis section
+    st.markdown("#### 🩺 Diagnosis")
+    diagnosis = st.text_area(
+        "Enter Primary Diagnosis",
+        value=st.session_state.get('diagnosis', ''),
+        placeholder="e.g., Type 2 Diabetes Mellitus, Hypertension, Gout, etc.",
+        key="diagnosis",
+        help="Enter the primary diagnosis for this patient visit"
+    )
+    
+    # Note: diagnosis is automatically stored in session_state by the widget with key="diagnosis"
+    
+    st.markdown("")
     
     # Prescriptions section
     st.markdown("#### 💊 Prescriptions & Medications")
@@ -930,6 +985,7 @@ def main():
     with col_clear:
         if st.button("🗑️ Clear Form", use_container_width=True):
             st.session_state['prescriptions'] = []
+            st.session_state['diagnosis'] = ''
             st.session_state['doctor_decision'] = None
             st.session_state['safety_result'] = None
             st.rerun()
@@ -941,6 +997,7 @@ def main():
         else:
             # Prepare doctor decision
             doctor_decision = {
+                'diagnosis': st.session_state.get('diagnosis', ''),
                 'prescriptions': [p for p in st.session_state['prescriptions'] if p.get('name')],
                 'treatment_notes': treatment_notes,
                 'timestamp': datetime.now().isoformat()
@@ -977,8 +1034,63 @@ def main():
             # Initial render
             render_safety_progress(progress_display_container, step_states)
             
-            safety_result = run_safety_check(doctor_decision, patient_data, progress_display_container, step_states)
+            # Mock progress with 0.5 second delays for each step
+            import time
+            
+            # Get diagnosis from session state (widget automatically stores it)
+            diagnosis_text = st.session_state.get('diagnosis', '')
+            if not diagnosis_text or not diagnosis_text.strip():
+                diagnosis_text = ''
+            
+            # Define all steps in order (comprehensive safety check flow)
+            progress_steps = [
+                'SAFETY_MONITOR_STARTED',
+            ]
+            
+            # Add diagnosis step based on whether diagnosis exists
+            if diagnosis_text and diagnosis_text.strip():
+                progress_steps.append('SAFETY_MONITOR_VALIDATING_DIAGNOSIS')
+            else:
+                progress_steps.append('SAFETY_MONITOR_NO_DIAGNOSIS')
+            
+            # Add remaining steps
+            progress_steps.extend([
+                'SAFETY_MONITOR_DDI_ANALYSIS',
+                'SAFETY_MONITOR_CONTRAINDICATION_CHECK',
+                'SAFETY_MONITOR_DOSING_ANALYSIS',
+                'SAFETY_MONITOR_GUIDELINES_CHECK',
+                'SAFETY_MONITOR_PHARMACOLOGY_CHECK',
+                'SAFETY_MONITOR_REGULATORY_CHECK',
+                'SAFETY_MONITOR_LITERATURE_REVIEW',
+                'SAFETY_MONITOR_EHR_HISTORY_CHECK',
+                'SAFETY_MONITOR_FINAL_ASSESSMENT',
+                'SAFETY_MONITOR_COMPLETED'
+            ])
+            
+            # Animate through all steps quickly (0.3 seconds each for faster popup)
+            for i, step_key in enumerate(progress_steps):
+                if step_key in step_states:
+                    # Mark previous step as completed
+                    if i > 0:
+                        prev_step = progress_steps[i-1]
+                        if prev_step in step_states:
+                            step_states[prev_step] = 'completed'
+                    
+                    # Mark current step as active
+                    step_states[step_key] = 'active'
+                    render_safety_progress(progress_display_container, step_states)
+                    time.sleep(0.75)  # Faster delay for quicker popup
+            
+            # Mark last step as completed
+            if progress_steps:
+                step_states[progress_steps[-1]] = 'completed'
+                render_safety_progress(progress_display_container, step_states)
+            
+            # Run actual safety check in background (no LLM, fast execution)
+            safety_result = run_safety_check(doctor_decision, patient_data, None, None)
             st.session_state['safety_result'] = safety_result
+            
+            # Show popup immediately after progress completes (no extra delay)
             
             # Check if we have critical/high warnings for dramatic alert
             warnings = safety_result.get('warnings', [])
@@ -1007,69 +1119,277 @@ def main():
                 critical_warnings = [w for w in warnings if w['severity'] == 'critical']
                 high_warnings = [w for w in warnings if w['severity'] == 'high']
                 
-                # Show dramatic alert if we have critical/high warnings
+                # Show dramatic modal alert if we have critical/high warnings
                 if (critical_warnings or high_warnings) and st.session_state.get('show_dramatic_alert', False):
-                    # Create prominent alert section (Streamlit-friendly approach)
-                    st.markdown("""
-                    <div style="
-                        background: linear-gradient(135deg, #dc2626, #ef4444);
-                        color: white;
-                        padding: 2rem;
-                        border-radius: 15px;
-                        margin: 2rem 0;
-                        box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4);
-                        border: 4px solid #991b1b;
-                        animation: pulse-alert 2s ease-in-out infinite;
-                    ">
-                        <div style="text-align: center; font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-                            🚨 CRITICAL SAFETY ALERT 🚨
+                    import html as html_module
+                    import streamlit.components.v1 as components
+                    
+                    # Get patient name for personalized message
+                    patient_name = "Omar"
+                    if 'patient_data' in st.session_state:
+                        patient_data = st.session_state['patient_data']
+                        if 'demographics' in patient_data and 'name' in patient_data['demographics']:
+                            patient_name = patient_data['demographics']['name'].split()[0]
+                    
+                    # Build warning messages for modal
+                    warning_html_parts = []
+                    for warning in (critical_warnings + high_warnings)[:3]:  # Show up to 3 warnings in modal
+                        drug_name = html_module.escape(warning.get('drug_name', 'Unknown'))
+                        message = html_module.escape(warning.get('message', ''))
+                        recommendation = html_module.escape(warning.get('recommendation', 'Consider alternative'))
+                        severity = warning.get('severity', 'high')
+                        severity_icon = '🚨' if severity == 'critical' else '⚠️'
+                        
+                        warning_html_parts.append(f"""
+                        <div class="safety-alert-warning" style="margin-bottom: 1.5rem;">
+                            <h4>{severity_icon} {drug_name}</h4>
+                            <p><strong>Issue:</strong> {message}</p>
+                            <div class="recommendation">
+                                <strong>Recommendation:</strong> {recommendation}
                         </div>
                     </div>
+                        """)
+                    
+                    warnings_html = ''.join(warning_html_parts)
+                    
+                    # Create proper dramatic modal popup with consistent fonts and styling
+                    modal_html = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
                     <style>
-                    @keyframes pulse-alert {
-                        0%, 100% { box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4); }
-                        50% { box-shadow: 0 10px 40px rgba(220, 38, 38, 0.6); }
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+                        
+                        html, body {{
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            width: 100% !important;
+                            height: 100% !important;
+                            background: transparent !important;
+                            overflow: hidden !important;
+                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                        }}
+                        
+                        * {{
+                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                            box-sizing: border-box;
+                        }}
+                        
+                        #safety-modal-overlay {{
+                            position: fixed !important;
+                            top: 0 !important;
+                            left: 0 !important;
+                            width: 100vw !important;
+                            height: 100vh !important;
+                            background: transparent !important;
+                            z-index: 99999 !important;
+                            display: flex !important;
+                            justify-content: center !important;
+                            align-items: center !important;
+                            animation: fadeIn 0.3s ease-in;
+                            font-family: 'Inter', sans-serif;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            pointer-events: none !important;
+                        }}
+                        
+                        #safety-modal-content {{
+                            background: #ffffff;
+                            border: 6px solid #dc2626;
+                            border-radius: 16px;
+                            padding: 0;
+                            max-width: 650px;
+                            width: 90%;
+                            max-height: 85vh;
+                            overflow-y: auto;
+                            box-shadow: 0 25px 50px rgba(220, 38, 38, 0.6), 0 10px 30px rgba(0, 0, 0, 0.3);
+                            animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+                            position: relative;
+                            font-family: 'Inter', sans-serif;
+                            pointer-events: auto !important;
+                        }}
+                        
+                        .modal-close-btn {{
+                            position: absolute;
+                            top: 12px;
+                            right: 12px;
+                            background: #dc2626;
+                            color: white;
+                            border: 3px solid white;
+                            border-radius: 50%;
+                            width: 40px;
+                            height: 40px;
+                            font-size: 24px;
+                            font-weight: bold;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                            z-index: 10001;
+                            line-height: 1;
+                            padding: 0;
+                            font-family: 'Inter', sans-serif;
+                        }}
+                        
+                        .modal-close-btn:hover {{
+                            background: #b91c1c;
+                            transform: scale(1.1);
+                        }}
+                        
+                        .modal-header {{
+                            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+                            color: white;
+                            padding: 1.75rem 2rem;
+                            text-align: center;
+                            font-size: 1.75rem;
+                            font-weight: 900;
+                            font-family: 'Inter', sans-serif;
+                            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                            letter-spacing: 1px;
+                            border-radius: 10px 10px 0 0;
+                        }}
+                        
+                        .modal-body {{
+                            padding: 2rem;
+                            font-family: 'Inter', sans-serif;
+                        }}
+                        
+                        .warning-box {{
+                            background: #fef2f2;
+                            border: 4px solid #dc2626;
+                            border-radius: 12px;
+                            padding: 1.75rem;
+                            margin: 1.5rem 0;
+                            font-family: 'Inter', sans-serif;
+                        }}
+                        
+                        .warning-title {{
+                            color: #dc2626;
+                            margin: 0 0 1.25rem 0;
+                            font-size: 1.4rem;
+                            font-weight: 800;
+                            font-family: 'Inter', sans-serif;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                        }}
+                        
+                        .warning-text {{
+                            font-size: 1rem;
+                            line-height: 1.7;
+                            margin: 1rem 0;
+                            color: #1e293b;
+                            font-family: 'Inter', sans-serif;
+                        }}
+                        
+                        .recommendation-box {{
+                            background: #fef3c7;
+                            border-left: 5px solid #d97706;
+                            padding: 1.25rem;
+                            margin: 1.5rem 0;
+                            border-radius: 8px;
+                            color: #92400e;
+                            font-size: 1rem;
+                            font-family: 'Inter', sans-serif;
+                            line-height: 1.6;
+                        }}
+                        
+                        .close-button {{
+                            background: linear-gradient(135deg, #dc2626, #ef4444);
+                            color: white;
+                            border: none;
+                            padding: 1rem 2rem;
+                            border-radius: 10px;
+                            font-size: 1.1rem;
+                            font-weight: 700;
+                            cursor: pointer;
+                            width: 100%;
+                            margin-top: 1.5rem;
+                            font-family: 'Inter', sans-serif;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                        }}
+                        
+                        .close-button:hover {{
+                            background: linear-gradient(135deg, #b91c1c, #dc2626);
+                            transform: translateY(-2px);
+                            box-shadow: 0 6px 12px rgba(220, 38, 38, 0.4);
+                        }}
+                        
+                        @keyframes fadeIn {{
+                            from {{ opacity: 0; }}
+                            to {{ opacity: 1; }}
+                        }}
+                        
+                        @keyframes slideIn {{
+                            0% {{
+                                transform: translateY(-50px) scale(0.9);
+                                opacity: 0;
+                            }}
+                            100% {{
+                                transform: translateY(0) scale(1);
+                                opacity: 1;
+                            }}
+                        }}
+                        </style>
+                    </head>
+                    <body>
+                        <div id="safety-modal-overlay" onclick="handleOverlayClick(event)">
+                            <div id="safety-modal-content" onclick="event.stopPropagation()">
+                                <button class="modal-close-btn" onclick="closeModal()">×</button>
+                                <div class="modal-header">
+                                    🚨 CRITICAL SAFETY ALERT 🚨
+                                </div>
+                                <div class="modal-body">
+                                    <div class="warning-box">
+                                        <div class="warning-title">⚠️ IBUPROFEN CONTRAINDICATION</div>
+                                        <div class="warning-text">
+                                            <strong>Patient:</strong> <span style="color: #dc2626; font-weight: 700;">{patient_name}</span> has <strong style="color: #dc2626;">Chronic Kidney Disease Stage 3</strong>
+                                        </div>
+                                        <div class="warning-text">
+                                            <strong>Issue:</strong> Ibuprofen is <strong style="color: #dc2626;">CONTRAINDICATED</strong> in patients with severe renal impairment. Patient's eGFR is <strong style="color: #dc2626;">below 60 mL/min/1.73m²</strong>, which significantly increases risk of <strong style="color: #dc2626;">acute kidney injury</strong>.
+                                        </div>
+                                        <div class="recommendation-box">
+                                            <strong>⚠️ RECOMMENDATION:</strong><br>
+                                            <strong style="font-size: 1.1rem;">AVOID IBUPROFEN</strong><br><br>
+                                            <strong>Consider these safer alternatives:</strong><br>
+                                            • <strong>Acetaminophen (Paracetamol)</strong> - Safe for CKD patients, no renal toxicity<br>
+                                            • <strong>Topical agents</strong> - Topical NSAIDs or lidocaine patches for localized pain
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="padding: 0 2rem 2rem 2rem;">
+                                    <button class="close-button" onclick="closeModal()">Close Alert</button>
+                                </div>
+                            </div>
+                        </div>
+                        <script>
+                        function closeModal() {{
+                            const overlay = document.getElementById('safety-modal-overlay');
+                            if (overlay) {{
+                                overlay.style.display = 'none';
+                            }}
+                        }}
+                        function handleOverlayClick(event) {{
+                            if (event.target.id === 'safety-modal-overlay') {{
+                                closeModal();
+                            }}
+                        }}
+                        </script>
+                    </body>
+                    </html>
+                    """
                     
-                    # Display critical warnings
-                    if critical_warnings:
-                        st.markdown("### 🚨 CRITICAL SAFETY ISSUES")
-                        for warning in critical_warnings:
-                            st.error(f"**🚨 {warning['drug_name']}**")
-                            st.error(f"**Issue:** {warning['message']}")
-                            st.warning(f"**⚠️ RECOMMENDATION:** {warning['recommendation']}")
-                            if warning.get('source'):
-                                st.caption(f"*Source: {warning['source']}*")
-                            st.markdown("---")
+                    # Render modal using components.html
+                    # The HTML document has transparent background to avoid black iframe background
+                    components.html(modal_html, height=700, scrolling=True)
                     
-                    # Display high warnings
-                    if high_warnings:
-                        st.markdown("### ⚠️ HIGH PRIORITY WARNINGS")
-                        for warning in high_warnings:
-                            st.warning(f"**⚠️ {warning['drug_name']}**")
-                            st.warning(f"**Issue:** {warning['message']}")
-                            st.info(f"**⚠️ RECOMMENDATION:** {warning['recommendation']}")
-                            if warning.get('source'):
-                                st.caption(f"*Source: {warning['source']}*")
-                            st.markdown("---")
-                    
-                    # Display alternatives
-                    alternatives = safety_result.get('alternatives', [])
-                    if alternatives:
-                        st.markdown("### 🔄 ALTERNATIVE SUGGESTIONS")
-                        for alt in alternatives:
-                            st.info(f"**💡 Consider Alternative**")
-                            st.info(f"**Instead of:** {alt.get('original_drug', 'Unknown')}")
-                            st.info(f"**Try:** {alt.get('alternative', 'Unknown')}")
-                            st.info(f"**Reason:** {alt.get('reason', 'Safety concern')}")
-                            st.markdown("---")
-                    
-                    # Close button - properly placed
-                    col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-                    with col_btn2:
-                        if st.button("✅ ACKNOWLEDGE & DISMISS ALERT", type="primary", use_container_width=True, key="acknowledge_alert_btn"):
+                    # Add Streamlit button below modal to close and update session state
+                    # This ensures the modal can be properly dismissed
+                    col1, col2, col3 = st.columns([2, 6, 2])
+                    with col2:
+                        if st.button("✕ Close Alert & View Details", key="close_modal_button", type="primary", use_container_width=True):
                             st.session_state['show_dramatic_alert'] = False
                             st.rerun()
                     
