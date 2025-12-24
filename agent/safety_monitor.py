@@ -13,6 +13,7 @@ safety of prescribed medications against patient context, using:
 """
 import json
 import os
+import asyncio
 from typing import Dict, List, Callable, Optional
 from dataclasses import dataclass, asdict
 from llm.med_gemma_wrapper import MedGemmaLLM
@@ -70,7 +71,7 @@ class SafetyMonitorAgent:
             print(f"Warning: Could not load drug database: {e}")
         return {}
     
-    def run(self, patient_id: str, doctor_decision: Dict, patient_context: Dict, emit: Callable) -> Dict:
+    async def run(self, patient_id: str, doctor_decision: Dict, patient_context: Dict, emit: Callable) -> Dict:
         """
         Run comprehensive safety check on doctor's treatment decisions.
         
@@ -111,7 +112,7 @@ class SafetyMonitorAgent:
             emit(f"SAFETY_MONITOR_VALIDATING_{len(prescriptions)}_PRESCRIPTIONS")
             
             # Run comprehensive safety checks
-            safety_results = self._run_safety_checks(
+            safety_results = await self._run_safety_checks(
                 patient_id, prescriptions, patient_context, diagnosis, emit
             )
             
@@ -144,7 +145,7 @@ class SafetyMonitorAgent:
                 'summary': f'Safety check failed: {str(e)}'
             }
     
-    def _run_safety_checks(self, patient_id: str, prescriptions: List[Dict], 
+    async def _run_safety_checks(self, patient_id: str, prescriptions: List[Dict], 
                           patient_context: Dict, diagnosis: str, emit: Callable) -> Dict:
         """Run all safety checks on prescriptions."""
         warnings = []
@@ -167,13 +168,13 @@ class SafetyMonitorAgent:
             emit(f"SAFETY_CHECKING_{drug_name}")
             
             # 1. Drug-Drug Interaction Check
-            ddi_warnings = self._check_drug_interactions(
+            ddi_warnings = await self._check_drug_interactions(
                 drug_name, current_meds, patient_context
             )
             warnings.extend(ddi_warnings)
             
             # 2. Allergy Check
-            allergy_warnings = self._check_allergies(
+            allergy_warnings = await self._check_allergies(
                 drug_name, allergies, patient_id
             )
             warnings.extend(allergy_warnings)
@@ -191,19 +192,19 @@ class SafetyMonitorAgent:
             warnings.extend(dosing_warnings)
             
             # 5. Clinical Guidelines Check
-            guideline_warnings = self._check_guidelines(
+            guideline_warnings = await self._check_guidelines(
                 drug_name, conditions, patient_context
             )
             warnings.extend(guideline_warnings)
             
             # 6. Pharmacology Check
-            pharmacology_warnings = self._check_pharmacology(
+            pharmacology_warnings = await self._check_pharmacology(
                 drug_name, current_meds, patient_context
             )
             warnings.extend(pharmacology_warnings)
             
             # 7. Historical EHR Analysis
-            history_warnings = self._check_ehr_history(
+            history_warnings = await self._check_ehr_history(
                 patient_id, drug_name, patient_context
             )
             warnings.extend(history_warnings)
@@ -271,11 +272,13 @@ class SafetyMonitorAgent:
                     
                     if not lab_support:
                         warnings.append(SafetyWarning(
-                            category='diagnosis_validation',
                             severity='moderate',
+                            drug_name='N/A',
+                            warning_type='diagnosis_validation',
                             message=f"Diagnosis '{diagnosis}' may not align with patient's documented conditions. Consider reviewing patient history.",
+                            recommendation='Review patient history',
                             drug=None,
-                            details=f"Patient conditions: {', '.join([c.get('name', str(c)) if isinstance(c, dict) else str(c) for c in conditions[:3]])}"
+                            # details=f"Patient conditions: {', '.join([c.get('name', str(c)) if isinstance(c, dict) else str(c) for c in conditions[:3]])}"
                         ))
         
         # Check lab values for diagnosis support
@@ -283,11 +286,13 @@ class SafetyMonitorAgent:
             abnormal_labs = [lab for lab in labs if lab.get('status') in ['HIGH', 'LOW']]
             if abnormal_labs and ('normal' in diagnosis_lower or 'healthy' in diagnosis_lower):
                 warnings.append(SafetyWarning(
-                    category='diagnosis_validation',
                     severity='moderate',
+                    drug_name='N/A',
+                    warning_type='diagnosis_validation',
                     message=f"Diagnosis may not align with abnormal lab values present.",
+                    recommendation='Review abnormal labs',
                     drug=None,
-                    details=f"Found {len(abnormal_labs)} abnormal lab value(s)"
+                    # details=f"Found {len(abnormal_labs)} abnormal lab value(s)"
                 ))
         
         return warnings
@@ -331,17 +336,19 @@ class SafetyMonitorAgent:
             for cond, drug in common_mismatches:
                 if cond in diagnosis_lower and drug in drug_lower:
                     warnings.append(SafetyWarning(
-                        category='treatment_diagnosis_mismatch',
                         severity='high',
+                        drug_name=drug_name,
+                        warning_type='treatment_diagnosis_mismatch',
                         message=f"Prescribed '{drug_name}' may not be appropriate for diagnosis '{diagnosis}'",
-                        drug=drug_name,
-                        details=f"Consider reviewing treatment guidelines for {diagnosis}"
+                        recommendation=f"Consider reviewing treatment guidelines for {diagnosis}",
+                        source='guidelines',
+                        confidence='medium'
                     ))
                     break
         
         return warnings
     
-    def _check_drug_interactions(self, new_drug: str, current_meds: List[Dict], 
+    async def _check_drug_interactions(self, new_drug: str, current_meds: List[Dict], 
                                  patient_context: Dict) -> List[SafetyWarning]:
         """Check for drug-drug interactions."""
         warnings = []
@@ -352,7 +359,7 @@ class SafetyMonitorAgent:
             
             # Check DDI using existing tool
             all_meds = current_meds + [{'name': new_drug}]
-            ddi_results = self.tools['ddi'](all_meds)
+            ddi_results = await self.tools['ddi'](all_meds)
             
             for interaction in ddi_results:
                 if interaction.get('a') == new_drug or interaction.get('b') == new_drug:
@@ -383,7 +390,7 @@ class SafetyMonitorAgent:
         
         return warnings
     
-    def _check_allergies(self, drug_name: str, allergies: List[Dict], 
+    async def _check_allergies(self, drug_name: str, allergies: List[Dict], 
                         patient_id: str) -> List[SafetyWarning]:
         """Check for drug allergies."""
         warnings = []
@@ -415,6 +422,10 @@ class SafetyMonitorAgent:
         # Check historical allergies using EHR tool
         if 'ehr' in self.tools:
             try:
+                # Need to import ehr tool specifically if it's not passed correctly or if we need specific function
+                # But here we assume self.tools['ehr'] is the get_ehr function.
+                # The check_allergy_history is a separate function in ehr module.
+                # We should import it.
                 from tools import ehr as ehr_tool
                 historical_allergy = ehr_tool.check_allergy_history(patient_id, drug_name)
                 if historical_allergy:
@@ -578,7 +589,7 @@ class SafetyMonitorAgent:
         
         return warnings
     
-    def _check_guidelines(self, drug_name: str, conditions: List[Dict], 
+    async def _check_guidelines(self, drug_name: str, conditions: List[Dict], 
                          patient_context: Dict) -> List[SafetyWarning]:
         """Check drug against clinical guidelines."""
         warnings = []
@@ -595,7 +606,7 @@ class SafetyMonitorAgent:
                 keywords = condition.split()[:2]  # First 2 words
                 
                 for keyword in keywords:
-                    guideline_results = self.tools['guidelines'](keyword)
+                    guideline_results = await self.tools['guidelines'](keyword)
                     
                     for guideline in guideline_results:
                         guideline_text = guideline.get('snippet', '').lower()
@@ -621,7 +632,7 @@ class SafetyMonitorAgent:
         
         return warnings
     
-    def _check_pharmacology(self, drug_name: str, current_meds: List[Dict], 
+    async def _check_pharmacology(self, drug_name: str, current_meds: List[Dict], 
                            patient_context: Dict) -> List[SafetyWarning]:
         """Check pharmacology-based interactions and mechanisms."""
         warnings = []
@@ -640,7 +651,7 @@ class SafetyMonitorAgent:
             # Check pharmacological interactions with current meds
             for med in current_meds:
                 med_name = med.get('name', '')
-                interaction = pharmacology_tool.check_pharmacological_interaction(drug_name, med_name)
+                interaction = await pharmacology_tool.check_pharmacological_interaction(drug_name, med_name)
                 
                 if interaction:
                     warnings.append(SafetyWarning(
@@ -655,7 +666,7 @@ class SafetyMonitorAgent:
                     ))
             
             # Check clearance pathway conflicts
-            drug_clearance = pharmacology_tool.check_clearance_pathway(drug_name)
+            drug_clearance = await pharmacology_tool.check_clearance_pathway(drug_name)
             if drug_clearance == 'renal':
                 egfr = self._get_lab_value(patient_context.get('LABS', {}).get('results', []), 'eGFR')
                 if egfr and egfr < 30:
@@ -675,7 +686,7 @@ class SafetyMonitorAgent:
         
         return warnings
     
-    def _check_ehr_history(self, patient_id: str, drug_name: str, 
+    async def _check_ehr_history(self, patient_id: str, drug_name: str, 
                            patient_context: Dict) -> List[SafetyWarning]:
         """Check historical EHR for relevant patterns."""
         warnings = []
@@ -687,7 +698,7 @@ class SafetyMonitorAgent:
             from tools import ehr as ehr_tool
             
             # Check for past conditions that might affect drug safety
-            past_conditions = ehr_tool.get_past_conditions(patient_id)
+            past_conditions = await ehr_tool.get_past_conditions(patient_id)
             
             # Check if patient had conditions that might contraindicate rechallenge
             drug_info = self._get_drug_info(drug_name)
@@ -738,53 +749,118 @@ class SafetyMonitorAgent:
         
         return warnings
     
-    def _llm_safety_reasoning(self, prescriptions: List[Dict], safety_results: Dict,
-                              patient_context: Dict, emit: Callable) -> List[str]:
-        """Use LLM for intelligent reasoning on complex safety scenarios."""
-        try:
-            warnings = safety_results['warnings']
-            
-            # Build context for LLM
-            context_parts = []
-            context_parts.append("PATIENT CONTEXT:")
-            context_parts.append(f"EHR: {json.dumps(patient_context.get('EHR', {}), indent=2)}")
-            context_parts.append(f"LABS: {json.dumps(patient_context.get('LABS', {}), indent=2)}")
-            context_parts.append(f"CURRENT MEDS: {json.dumps(patient_context.get('MEDS', {}), indent=2)}")
-            
-            context_parts.append("\nPRESCRIPTIONS:")
-            for rx in prescriptions:
-                context_parts.append(f"- {rx.get('name')} {rx.get('dose')} {rx.get('frequency')}")
-            
-            context_parts.append("\nSAFETY WARNINGS DETECTED:")
-            for warning in warnings[:10]:  # Limit to first 10
-                context_parts.append(f"- {warning.severity.upper()}: {warning.message}")
-            
-            context = "\n".join(context_parts)
-            
-            prompt = f"""You are a clinical safety expert analyzing prescription safety warnings.
-
-{context}
-
-Please provide:
-1. Overall risk assessment (low/medium/high/critical)
-2. Most critical safety concerns that need immediate attention
-3. Additional considerations based on patient context
-4. Recommendations for safe prescribing
-
-Be concise and actionable."""
-
-            # Use LLM to generate insights (using synthesize method)
-            try:
-                system_prompt = "You are a clinical safety expert analyzing prescription safety warnings."
-                insights = self.llm.synthesize(system_prompt, prompt, {})
-                return [insights] if insights else []
-            except Exception:
-                # Fallback if synthesize doesn't work
-                return []
-            
-        except Exception as e:
-            emit(f"LLM_REASONING_ERROR: {str(e)}")
-            return []
+    def _get_drug_info(self, drug_name: str) -> Optional[Dict]:
+        """Get drug info from database."""
+        drug_lower = drug_name.lower()
+        
+        # Check direct match
+        if drug_lower in self.drug_database:
+            return self.drug_database[drug_lower]
+        
+        # Check partial matches
+        for key, value in self.drug_database.items():
+            if key in drug_lower or drug_lower in key:
+                return value
+        
+        return None
+    
+    def _get_lab_value(self, labs: List[Dict], test_name: str) -> Optional[float]:
+        """Get value of a specific lab test."""
+        test_lower = test_name.lower()
+        for lab in labs:
+            if test_lower in lab.get('test', '').lower():
+                try:
+                    return float(lab.get('value'))
+                except (ValueError, TypeError):
+                    return None
+        return None
+    
+    def _map_ddi_severity(self, severity: str) -> str:
+        """Map DDI severity to safety warning severity."""
+        severity = severity.lower()
+        if severity in ['major', 'severe', 'contraindicated']:
+            return 'critical'
+        elif severity in ['moderate', 'significant']:
+            return 'high'
+        elif severity in ['minor', 'mild']:
+            return 'low'
+        return 'medium'
+    
+    def _check_drug_class_allergy(self, drug_name: str, allergy_name: str) -> bool:
+        """Check if drug belongs to allergic class."""
+        drug_classes = {
+            'penicillin': ['amoxicillin', 'ampicillin', 'penicillin', 'augmentin'],
+            'sulfa': ['sulfamethoxazole', 'sulfasalazine', 'bactrim'],
+            'ace_inhibitor': ['lisinopril', 'enalapril', 'captopril', 'ramipril'],
+            'nsaid': ['ibuprofen', 'naproxen', 'aspirin', 'meloxicam', 'diclofenac']
+        }
+        
+        drug_lower = drug_name.lower()
+        allergy_lower = allergy_name.lower()
+        
+        for class_name, members in drug_classes.items():
+            if class_name in allergy_lower:
+                if any(member in drug_lower for member in members):
+                    return True
+        
+        return False
+    
+    def _suggest_allergy_alternative(self, drug_name: str, allergy_name: str) -> Optional[str]:
+        """Suggest alternative for allergic drug."""
+        # Simple lookup for common alternatives
+        alternatives = {
+            'amoxicillin': 'Azithromycin or Clindamycin',
+            'lisinopril': 'Losartan (ARB) if cough, but caution if angioedema',
+            'ibuprofen': 'Acetaminophen',
+            'bactrim': 'Nitrofurantoin or Ciprofloxacin'
+        }
+        
+        drug_lower = drug_name.lower()
+        for key, value in alternatives.items():
+            if key in drug_lower:
+                return value
+        return None
+    
+    def _suggest_renal_alternative(self, drug_name: str) -> Optional[str]:
+        """Suggest alternative for renally cleared drug."""
+        alternatives = {
+            'metformin': 'Glipizide or Insulin',
+            'lisinopril': 'Fosinopril (hepatically cleared)',
+            'atenolol': 'Metoprolol (hepatically cleared)'
+        }
+        
+        drug_lower = drug_name.lower()
+        for key, value in alternatives.items():
+            if key in drug_lower:
+                return value
+        return None
+    
+    def _generate_recommendations(self, warnings: List[SafetyWarning]) -> List[str]:
+        """Generate consolidated recommendations."""
+        recommendations = []
+        seen = set()
+        
+        for warning in warnings:
+            if warning.recommendation and warning.recommendation not in seen:
+                recommendations.append(f"{warning.drug_name}: {warning.recommendation}")
+                seen.add(warning.recommendation)
+        
+        return recommendations
+    
+    def _suggest_alternatives(self, prescriptions: List[Dict], warnings: List[SafetyWarning], 
+                            patient_context: Dict) -> List[Dict]:
+        """Suggest alternatives for problematic prescriptions."""
+        alternatives = []
+        
+        for warning in warnings:
+            if warning.alternative:
+                alternatives.append({
+                    'original_drug': warning.drug_name,
+                    'suggested_alternative': warning.alternative,
+                    'reason': warning.message
+                })
+        
+        return alternatives
     
     def _generate_safety_summary(self, safety_results: Dict) -> str:
         """Generate human-readable safety summary."""
@@ -798,136 +874,12 @@ Be concise and actionable."""
         medium_count = sum(1 for w in warnings if w.severity == 'medium')
         low_count = sum(1 for w in warnings if w.severity == 'low')
         
-        summary_parts = []
-        
+        summary = []
         if critical_count > 0:
-            summary_parts.append(f"🚨 {critical_count} CRITICAL safety issue(s)")
+            summary.append(f"⛔ {critical_count} CRITICAL safety issues detected - Immediate action required.")
         if high_count > 0:
-            summary_parts.append(f"⚠️ {high_count} HIGH priority warning(s)")
+            summary.append(f"⚠️ {high_count} High priority warnings - Review recommended.")
         if medium_count > 0:
-            summary_parts.append(f"ℹ️ {medium_count} medium priority note(s)")
-        if low_count > 0:
-            summary_parts.append(f"📋 {low_count} low priority note(s)")
-        
-        return " | ".join(summary_parts)
-    
-    def _generate_recommendations(self, warnings: List[SafetyWarning]) -> List[str]:
-        """Generate actionable recommendations from warnings."""
-        recommendations = []
-        
-        for warning in warnings:
-            if warning.severity in ['critical', 'high']:
-                rec = f"{warning.drug_name}: {warning.recommendation}"
-                if warning.source:
-                    rec += f" [Source: {warning.source}]"
-                recommendations.append(rec)
-        
-        return recommendations
-    
-    def _suggest_alternatives(self, prescriptions: List[Dict], warnings: List[SafetyWarning], 
-                             patient_context: Dict) -> List[Dict]:
-        """Suggest alternative medications for problematic prescriptions."""
-        alternatives = []
-        
-        for warning in warnings:
-            if warning.alternative:
-                alternatives.append({
-                    'original_drug': warning.drug_name,
-                    'alternative': warning.alternative,
-                    'reason': warning.message,
-                    'severity': warning.severity,
-                    'source': warning.source
-                })
-        
-        return alternatives
-    
-    # Helper methods
-    def _get_drug_info(self, drug_name: str) -> Optional[Dict]:
-        """Get drug information from database."""
-        if not self.drug_database:
-            return None
-        
-        drugs = self.drug_database.get('drugs', {})
-        drug_lower = drug_name.lower()
-        
-        # Direct match
-        if drug_lower in drugs:
-            return drugs[drug_lower]
-        
-        # Partial match
-        for key, value in drugs.items():
-            if key in drug_lower or drug_lower in key:
-                return value
-        
-        return None
-    
-    def _map_ddi_severity(self, ddi_severity: str) -> str:
-        """Map DDI severity to safety warning severity."""
-        mapping = {
-            'major': 'critical',
-            'severe': 'critical',
-            'moderate': 'high',
-            'minor': 'medium',
-            'none': 'low'
-        }
-        return mapping.get(ddi_severity.lower(), 'medium')
-    
-    def _check_drug_class_allergy(self, drug_name: str, allergy_name: str) -> bool:
-        """Check if drug belongs to a class the patient is allergic to."""
-        if not self.drug_database:
-            return False
-        
-        drug_classes = self.drug_database.get('drug_classes', {})
-        drug_lower = drug_name.lower()
-        allergy_lower = allergy_name.lower()
-        
-        for drug_class, class_info in drug_classes.items():
-            if drug_class in allergy_lower:
-                members = class_info.get('members', [])
-                if drug_lower in [m.lower() for m in members]:
-                    return True
-        
-        return False
-    
-    def _get_lab_value(self, labs: List[Dict], test_name: str) -> Optional[float]:
-        """Get specific lab value."""
-        for lab in labs:
-            if lab.get('test', '').lower() == test_name.lower():
-                try:
-                    return float(lab.get('value', 0))
-                except (ValueError, TypeError):
-                    return None
-        return None
-    
-    def _suggest_allergy_alternative(self, drug_name: str, allergy_name: str) -> Optional[str]:
-        """Suggest alternative for drug allergy."""
-        alternatives = {
-            'penicillin': 'Cephalexin or azithromycin',
-            'sulfa': 'Alternative antibiotic based on indication',
-            'ace_inhibitor': 'ARB (losartan, valsartan)',
-            'nsaid': 'Acetaminophen or topical agents'
-        }
-        
-        allergy_lower = allergy_name.lower()
-        for allergy, alternative in alternatives.items():
-            if allergy in allergy_lower:
-                return alternative
-        
-        return None
-    
-    def _suggest_renal_alternative(self, drug_name: str) -> Optional[str]:
-        """Suggest renal-friendly alternative."""
-        drug_info = self._get_drug_info(drug_name)
-        if drug_info:
-            contraindications = drug_info.get('contraindications', [])
-            for contra in contraindications:
-                if 'renal' in contra.get('condition', '').lower():
-                    return contra.get('alternative')
-        
-        alternatives = {
-            'metformin': 'Insulin therapy',
-            'gabapentin': 'Pregabalin (lower dose)',
-            'digoxin': 'Beta-blocker or calcium channel blocker'
-        }
-        
-        return alternatives.get(drug_name.lower())
+            summary.append(f"ℹ️ {medium_count} Moderate warnings - Monitor patient.")
+            
+        return "\n".join(summary)

@@ -6,7 +6,8 @@ error handling and dynamic decision making.
 """
 import json
 import re
-from typing import Callable, Dict, Optional
+import asyncio
+from typing import Callable, Dict, Optional, List, Any
 from tools import ehr, labs, meds, imaging, ddi, guidelines, safety_checker
 from llm.med_gemma_wrapper import MedGemmaLLM
 from config import Config
@@ -45,7 +46,7 @@ def extract_keywords(text: str) -> list:
     return keywords
 
 
-def run_agent_intelligent(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
+async def run_agent_intelligent(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
     """
     INTELLIGENT MODE: Single intelligent agent with LLM-based tool selection.
     
@@ -71,7 +72,7 @@ def run_agent_intelligent(patient_id: str, complaint: str, emit: Callable[[str],
         agent = IntelligentDiagnosisAgent(llm)
         
         # Run agent
-        result = agent.run(patient_id, complaint, emit)
+        result = await agent.run(patient_id, complaint, emit)
         
         return result
         
@@ -79,10 +80,10 @@ def run_agent_intelligent(patient_id: str, complaint: str, emit: Callable[[str],
         emit(f"INTELLIGENT_AGENT_FAILED: {str(e)}")
         # Fallback to standard mode
         emit("FALLING_BACK_TO_STANDARD_MODE")
-        return run_agent_standard(patient_id, complaint, emit)
+        return await run_agent_standard(patient_id, complaint, emit)
 
 
-def run_agent_hybrid(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
+async def run_agent_hybrid(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
     """
     HYBRID MODE: Uses intelligent agent (backward compatibility).
     
@@ -95,10 +96,10 @@ def run_agent_hybrid(patient_id: str, complaint: str, emit: Callable[[str], None
         Tuple of (clinical_summary, observations_dict)
     """
     emit("USING_INTELLIGENT_AGENT_MODE")
-    return run_agent_intelligent(patient_id, complaint, emit)
+    return await run_agent_intelligent(patient_id, complaint, emit)
 
 
-def run_agent_standard(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
+async def run_agent_standard(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
     """
     STANDARD MODE: Level 1 autonomy with smart tool selection.
     
@@ -107,10 +108,10 @@ def run_agent_standard(patient_id: str, complaint: str, emit: Callable[[str], No
     Returns:
         Tuple of (clinical_summary, observations_dict)
     """
-    return _run_agent_level1(patient_id, complaint, emit)
+    return await _run_agent_level1(patient_id, complaint, emit)
 
 
-def _run_agent_level1(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
+async def _run_agent_level1(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
     """
     Execute the clinical assistant agent workflow with smart tool selection.
     
@@ -131,7 +132,7 @@ def _run_agent_level1(patient_id: str, complaint: str, emit: Callable[[str], Non
     # Step 1: ALWAYS fetch EHR (critical baseline)
     try:
         emit("FETCH_EHR_STARTED")
-        observations['EHR'] = ehr.get_ehr(patient_id)
+        observations['EHR'] = await ehr.get_ehr(patient_id)
         emit("FETCH_EHR_COMPLETED")
     except Exception as e:
         emit(f"FETCH_EHR_FAILED: {str(e)}")
@@ -149,51 +150,55 @@ def _run_agent_level1(patient_id: str, complaint: str, emit: Callable[[str], Non
         emit(f"TOOL_SELECTION_FAILED: {str(e)}, using all tools")
         prioritized_tools = ['ehr', 'labs', 'meds', 'imaging', 'ddi', 'guidelines']
     
-    # Step 3: Execute ONLY selected tools
+    # Step 3: Execute selected tools in parallel
+    tasks = []
+    task_names = []
+    
     if 'labs' in prioritized_tools:
-        try:
-            emit("FETCH_LABS_STARTED")
-            observations['LABS'] = labs.get_labs(patient_id)
-            emit("FETCH_LABS_COMPLETED")
-        except Exception as e:
-            emit(f"FETCH_LABS_FAILED: {str(e)}")
-            errors.append(f"Labs: {str(e)}")
-            observations['LABS'] = {"error": str(e)}
+        emit("FETCH_LABS_STARTED")
+        tasks.append(labs.get_labs(patient_id))
+        task_names.append('LABS')
     else:
         emit("FETCH_LABS_SKIPPED (not relevant)")
     
     if 'meds' in prioritized_tools:
-        try:
-            emit("FETCH_MEDS_STARTED")
-            observations['MEDS'] = meds.get_meds(patient_id)
-            emit("FETCH_MEDS_COMPLETED")
-        except Exception as e:
-            emit(f"FETCH_MEDS_FAILED: {str(e)}")
-            errors.append(f"Medications: {str(e)}")
-            observations['MEDS'] = {"error": str(e), "active": []}
+        emit("FETCH_MEDS_STARTED")
+        tasks.append(meds.get_meds(patient_id))
+        task_names.append('MEDS')
     else:
         emit("FETCH_MEDS_SKIPPED (not relevant)")
         observations['MEDS'] = {"active": []}  # Empty for DDI check
     
     if 'imaging' in prioritized_tools:
-        try:
-            emit("FETCH_IMAGING_STARTED")
-            observations['IMAGING'] = imaging.get_imaging(patient_id)
-            emit("FETCH_IMAGING_COMPLETED")
-        except Exception as e:
-            emit(f"FETCH_IMAGING_FAILED: {str(e)}")
-            errors.append(f"Imaging: {str(e)}")
-            observations['IMAGING'] = {"error": str(e)}
+        emit("FETCH_IMAGING_STARTED")
+        tasks.append(imaging.get_imaging(patient_id))
+        task_names.append('IMAGING')
     else:
         emit("FETCH_IMAGING_SKIPPED (not relevant)")
-    
-    # Check DDI only if we have meds and it's selected
+        
+    # Execute parallel tasks
+    if tasks:
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for i, result in enumerate(results):
+            name = task_names[i]
+            if isinstance(result, Exception):
+                emit(f"FETCH_{name}_FAILED: {str(result)}")
+                errors.append(f"{name}: {str(result)}")
+                observations[name] = {"error": str(result)}
+                if name == 'MEDS':
+                    observations['MEDS'] = {"error": str(result), "active": []}
+            else:
+                emit(f"FETCH_{name}_COMPLETED")
+                observations[name] = result
+
+    # Step 4: DDI Check (dependent on MEDS)
     if 'ddi' in prioritized_tools and 'meds' in prioritized_tools:
         try:
             emit("CHECK_DDI_STARTED")
             active_meds = observations.get('MEDS', {}).get('active', [])
             if active_meds and not isinstance(observations.get('MEDS', {}).get('error'), str):
-                observations['DDI'] = ddi.query_ddi(active_meds)
+                observations['DDI'] = await ddi.query_ddi(active_meds)
             else:
                 observations['DDI'] = []
             emit("CHECK_DDI_COMPLETED")
@@ -206,7 +211,7 @@ def _run_agent_level1(patient_id: str, complaint: str, emit: Callable[[str], Non
             emit("CHECK_DDI_SKIPPED (not relevant)")
         observations['DDI'] = []
     
-    # Search Guidelines only if selected
+    # Step 5: Guidelines Search (dependent on EHR/Complaint)
     if 'guidelines' in prioritized_tools:
         try:
             emit("SEARCH_GUIDELINES_STARTED")
@@ -225,16 +230,20 @@ def _run_agent_level1(patient_id: str, complaint: str, emit: Callable[[str], Non
                     if 'hypertension' in condition_name or 'htn' in condition_name:
                         keywords.append('hypertension')
             
-            # Search for each keyword and combine results
+            # Search for each keyword in parallel
+            # Limit to top 3 keywords
+            search_tasks = [guidelines.search_guidelines(kw) for kw in keywords[:3]]
+            search_results = await asyncio.gather(*search_tasks, return_exceptions=True)
+            
             all_guidelines = []
             seen_titles = set()
             
-            for keyword in keywords[:3]:  # Limit to top 3 keywords
-                results = guidelines.search_guidelines(keyword)
-                for result in results:
-                    if result['title'] not in seen_titles:
-                        all_guidelines.append(result)
-                        seen_titles.add(result['title'])
+            for res in search_results:
+                if isinstance(res, list):
+                    for item in res:
+                        if item['title'] not in seen_titles:
+                            all_guidelines.append(item)
+                            seen_titles.add(item['title'])
             
             observations['GUIDE'] = all_guidelines
             emit(f"SEARCH_GUIDELINES_COMPLETED (keywords: {', '.join(keywords)})")
@@ -284,7 +293,7 @@ def _run_agent_level1(patient_id: str, complaint: str, emit: Callable[[str], Non
         return f"❌ Error during synthesis: {str(e)}\n\nObservations collected:\n{observations}", observations
 
 
-def run_agent_multi_agent(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
+async def run_agent_multi_agent(patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
     """
     MULTI-AGENT MODE: Level 5 autonomy with specialized agents.
     
@@ -323,7 +332,7 @@ def run_agent_multi_agent(patient_id: str, complaint: str, emit: Callable[[str],
         coordinator = CoordinatorAgent('Coordinator', tools, llm)
         
         # Run multi-agent analysis
-        result = coordinator.run(patient_id, complaint, emit)
+        result = await coordinator.run(patient_id, complaint, emit)
         
         # Extract summary and agent insights
         summary = result['summary']
@@ -349,7 +358,7 @@ def run_agent_multi_agent(patient_id: str, complaint: str, emit: Callable[[str],
         emit(f"MULTI_AGENT_FAILED: {str(e)}")
         # Fallback to standard mode
         emit("FALLING_BACK_TO_STANDARD_MODE")
-        return run_agent_standard(patient_id, complaint, emit)
+        return await run_agent_standard(patient_id, complaint, emit)
 
 
 class ClinicalAssistantOrchestrator:
@@ -377,7 +386,7 @@ class ClinicalAssistantOrchestrator:
             'guidelines': guidelines.search_guidelines
         }
     
-    def run(self, patient_id: str, complaint: str, progress_callback: Optional[Callable] = None) -> str:
+    async def run(self, patient_id: str, complaint: str, progress_callback: Optional[Callable] = None) -> str:
         """
         Execute clinical query using the agent.
         
@@ -393,10 +402,10 @@ class ClinicalAssistantOrchestrator:
             if progress_callback:
                 progress_callback(msg)
         
-        return run_agent_hybrid(patient_id, complaint, emit)
+        return await run_agent_hybrid(patient_id, complaint, emit)
 
 
-def run_safety_monitor(patient_id: str, doctor_decision: Dict, patient_context: Dict, emit: Callable[[str], None]) -> Dict:
+async def run_safety_monitor(patient_id: str, doctor_decision: Dict, patient_context: Dict, emit: Callable[[str], None]) -> Dict:
     """
     Run safety monitor on doctor's treatment decisions.
     
@@ -437,7 +446,7 @@ def run_safety_monitor(patient_id: str, doctor_decision: Dict, patient_context: 
         safety_monitor = SafetyMonitorAgent(tools, llm)
         
         # Run safety analysis
-        safety_result = safety_monitor.run(patient_id, doctor_decision, patient_context, emit)
+        safety_result = await safety_monitor.run(patient_id, doctor_decision, patient_context, emit)
         
         return safety_result
         
@@ -451,13 +460,13 @@ def run_safety_monitor(patient_id: str, doctor_decision: Dict, patient_context: 
 
 
 # Alias for backward compatibility
-def run_agent(patient_id: str, complaint: str, emit: Callable[[str], None]):
+async def run_agent(patient_id: str, complaint: str, emit: Callable[[str], None]):
     """
     Main entry point - uses intelligent agent mode.
     
     Returns tuple of (summary, observations) for backward compatibility.
     """
-    result = run_agent_intelligent(patient_id, complaint, emit)
+    result = await run_agent_intelligent(patient_id, complaint, emit)
     
     # Handle both tuple and string returns for backward compatibility
     if isinstance(result, tuple):
@@ -465,4 +474,3 @@ def run_agent(patient_id: str, complaint: str, emit: Callable[[str], None]):
     else:
         # If somehow returns string, wrap it
         return result, {}
-

@@ -8,7 +8,8 @@ Multiple specialized agents work together:
 - Guideline Agent: Matches to evidence-based protocols
 - Coordinator Agent: Synthesizes all perspectives
 """
-from typing import Dict, List, Callable
+import asyncio
+from typing import Dict, List, Callable, Any
 from dataclasses import dataclass
 
 
@@ -29,7 +30,7 @@ class BaseSpecializedAgent:
         self.tools = tools
         self.llm = llm
     
-    def process(self, patient_data: Dict) -> Dict:
+    async def process(self, patient_data: Dict) -> Dict:
         """Process patient data and return insights."""
         raise NotImplementedError
 
@@ -37,7 +38,7 @@ class BaseSpecializedAgent:
 class DataGathererAgent(BaseSpecializedAgent):
     """Specialist in efficient data collection."""
     
-    def process(self, patient_data: Dict) -> Dict:
+    async def process(self, patient_data: Dict) -> Dict:
         """
         Intelligently gather data based on complaint and initial findings.
         """
@@ -51,24 +52,39 @@ class DataGathererAgent(BaseSpecializedAgent):
         }
         
         # Always get EHR
-        ehr_data = self.tools['ehr'](patient_id)
+        ehr_data = await self.tools['ehr'](patient_id)
         insights['data_collected']['EHR'] = ehr_data
         insights['rationale'].append("EHR: Always needed for demographics and conditions")
         
+        # Prepare parallel tasks
+        tasks = []
+        task_names = []
+        
         # Smart decisions based on complaint
         if any(word in complaint.lower() for word in ['fatigue', 'tired', 'weak', 'dizzy']):
-            insights['data_collected']['LABS'] = self.tools['labs'](patient_id)
+            tasks.append(self.tools['labs'](patient_id))
+            task_names.append('LABS')
             insights['rationale'].append("LABS: Fatigue/weakness suggests need for CBC, metabolic panel")
         
         if any(word in complaint.lower() for word in ['pain', 'chest', 'breath']):
-            insights['data_collected']['IMAGING'] = self.tools['imaging'](patient_id)
+            tasks.append(self.tools['imaging'](patient_id))
+            task_names.append('IMAGING')
             insights['rationale'].append("IMAGING: Chest symptoms require imaging review")
         
         # Always check meds if multiple conditions
         conditions = ehr_data.get('conditions', [])
         if len(conditions) >= 2:
-            insights['data_collected']['MEDS'] = self.tools['meds'](patient_id)
+            tasks.append(self.tools['meds'](patient_id))
+            task_names.append('MEDS')
             insights['rationale'].append("MEDS: Multiple conditions likely mean multiple medications")
+            
+        # Execute parallel tasks
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for i, result in enumerate(results):
+                name = task_names[i]
+                if not isinstance(result, Exception):
+                    insights['data_collected'][name] = result
         
         return insights
 
@@ -76,7 +92,7 @@ class DataGathererAgent(BaseSpecializedAgent):
 class AnalyzerAgent(BaseSpecializedAgent):
     """Specialist in pattern recognition and trend analysis."""
     
-    def process(self, patient_data: Dict) -> Dict:
+    async def process(self, patient_data: Dict) -> Dict:
         """
         Analyze trends, patterns, and correlations in the data.
         """
@@ -134,30 +150,33 @@ class AnalyzerAgent(BaseSpecializedAgent):
     
     def _assess_significance(self, test_name: str, old_value: float, new_value: float) -> str:
         """Assess clinical significance of lab change."""
-        change_percent = abs((new_value - old_value) / old_value * 100)
-        
-        if 'creatinine' in test_name.lower():
-            if change_percent > 20:
-                return "SIGNIFICANT: >20% change in creatinine"
-            return "Monitor"
-        
-        if 'egfr' in test_name.lower():
-            if change_percent > 15:
-                return "SIGNIFICANT: >15% decline in kidney function"
-            return "Stable decline"
-        
-        if 'hemoglobin' in test_name.lower():
-            if change_percent > 10:
-                return "SIGNIFICANT: >10% change in hemoglobin"
-            return "Minor change"
-        
-        return "Assess clinically"
+        try:
+            change_percent = abs((new_value - old_value) / old_value * 100) if old_value != 0 else 0
+            
+            if 'creatinine' in test_name.lower():
+                if change_percent > 20:
+                    return "SIGNIFICANT: >20% change in creatinine"
+                return "Monitor"
+            
+            if 'egfr' in test_name.lower():
+                if change_percent > 15:
+                    return "SIGNIFICANT: >15% decline in kidney function"
+                return "Stable decline"
+            
+            if 'hemoglobin' in test_name.lower():
+                if change_percent > 10:
+                    return "SIGNIFICANT: >10% change in hemoglobin"
+                return "Minor change"
+            
+            return "Assess clinically"
+        except Exception:
+            return "Assess clinically"
 
 
 class RiskAssessmentAgent(BaseSpecializedAgent):
     """Specialist in identifying safety concerns and risks."""
     
-    def process(self, patient_data: Dict) -> Dict:
+    async def process(self, patient_data: Dict) -> Dict:
         """
         Assess risks: DDIs, contraindications, critical values.
         """
@@ -211,7 +230,7 @@ class RiskAssessmentAgent(BaseSpecializedAgent):
 class GuidelineAgent(BaseSpecializedAgent):
     """Specialist in matching to evidence-based guidelines."""
     
-    def process(self, patient_data: Dict) -> Dict:
+    async def process(self, patient_data: Dict) -> Dict:
         """
         Match findings to clinical guidelines and best practices.
         """
@@ -226,12 +245,16 @@ class GuidelineAgent(BaseSpecializedAgent):
         conditions = [c.get('name', '') for c in ehr.get('conditions', [])]
         
         # Search guidelines for each condition
+        tasks = []
         for condition in conditions:
             keywords = condition.split()[0].lower()  # First word of condition
-            guideline_results = self.tools['guidelines'](keywords)
+            tasks.append(self.tools['guidelines'](keywords))
             
-            if guideline_results:
-                insights['applicable_guidelines'].extend(guideline_results)
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for result in results:
+                if isinstance(result, list) and result:
+                    insights['applicable_guidelines'].extend(result)
         
         # Generate specific recommendations based on findings
         labs = patient_data.get('observations', {}).get('LABS', {}).get('results', [])
@@ -270,7 +293,7 @@ class CoordinatorAgent(BaseSpecializedAgent):
             'guideline': GuidelineAgent('GuidelineExpert', tools, llm)
         }
     
-    def run(self, patient_id: str, complaint: str, emit: Callable) -> Dict:
+    async def run(self, patient_id: str, complaint: str, emit: Callable) -> Dict:
         """
         Orchestrate all agents and synthesize their insights.
         """
@@ -278,40 +301,39 @@ class CoordinatorAgent(BaseSpecializedAgent):
         
         # Phase 1: Data Gathering
         emit("AGENT_DataGatherer_STARTED")
-        gatherer_output = self.agents['gatherer'].process({
+        gatherer_output = await self.agents['gatherer'].process({
             'patient_id': patient_id,
             'complaint': complaint
         })
         emit("AGENT_DataGatherer_COMPLETED")
         
-        # Phase 2: Analysis
-        emit("AGENT_Analyzer_STARTED")
-        analyzer_output = self.agents['analyzer'].process({
-            'patient_id': patient_id,
-            'complaint': complaint,
-            'observations': gatherer_output['data_collected']
-        })
-        emit("AGENT_Analyzer_COMPLETED")
+        # Phase 2: Parallel Analysis
+        emit("PARALLEL_ANALYSIS_STARTED")
         
-        # Phase 3: Risk Assessment
-        emit("AGENT_RiskAssessment_STARTED")
-        risk_output = self.agents['risk'].process({
-            'patient_id': patient_id,
-            'complaint': complaint,
-            'observations': gatherer_output['data_collected']
-        })
-        emit("AGENT_RiskAssessment_COMPLETED")
+        analysis_tasks = [
+            self.agents['analyzer'].process({
+                'patient_id': patient_id,
+                'complaint': complaint,
+                'observations': gatherer_output['data_collected']
+            }),
+            self.agents['risk'].process({
+                'patient_id': patient_id,
+                'complaint': complaint,
+                'observations': gatherer_output['data_collected']
+            }),
+            self.agents['guideline'].process({
+                'patient_id': patient_id,
+                'complaint': complaint,
+                'observations': gatherer_output['data_collected']
+            })
+        ]
         
-        # Phase 4: Guideline Matching
-        emit("AGENT_GuidelineExpert_STARTED")
-        guideline_output = self.agents['guideline'].process({
-            'patient_id': patient_id,
-            'complaint': complaint,
-            'observations': gatherer_output['data_collected']
-        })
-        emit("AGENT_GuidelineExpert_COMPLETED")
+        results = await asyncio.gather(*analysis_tasks)
+        analyzer_output, risk_output, guideline_output = results
         
-        # Phase 5: Synthesis
+        emit("PARALLEL_ANALYSIS_COMPLETED")
+        
+        # Phase 3: Synthesis
         emit("SYNTHESIS_STARTED")
         final_summary = self._synthesize_perspectives(
             gatherer_output,
@@ -344,8 +366,12 @@ class CoordinatorAgent(BaseSpecializedAgent):
         observations['GUIDELINES'] = guideline
         
         # Call LLM with enriched context
-        system_prompt = open('prompts/system.txt').read()
+        try:
+            with open('prompts/system.txt', 'r') as f:
+                system_prompt = f.read()
+        except Exception:
+            system_prompt = "You are a clinical decision support assistant."
+            
         user_prompt = f"patient_id: {patient_id}\ncomplaint: {complaint}"
         
         return self.llm.synthesize(system_prompt, user_prompt, observations)
-

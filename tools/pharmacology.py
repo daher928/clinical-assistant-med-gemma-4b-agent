@@ -6,10 +6,11 @@ to support safety monitoring and drug interaction analysis.
 """
 import json
 import os
-import time
+import asyncio
 import random
 from typing import Dict, List, Optional
 from config import Config
+from tools.base import BaseTool
 
 
 # Pharmacology knowledge base (in a real system, this would be from a comprehensive database)
@@ -178,94 +179,69 @@ PHARMACOLOGY_KB = {
 }
 
 
-def get_drug_pharmacology(drug_name: str) -> Optional[Dict]:
-    """
-    Get comprehensive pharmacology information for a drug.
+class PharmacologyTool(BaseTool):
+    """Tool for retrieving pharmacology information."""
     
-    Args:
-        drug_name: Name of the drug
+    def __init__(self):
+        super().__init__("Pharmacology")
         
-    Returns:
-        Dictionary with mechanism, pharmacokinetics, pharmacodynamics, adverse effects, and interactions
-    """
-    # Simulate network delay
-    time.sleep(random.uniform(0.2, 0.5))
-    
-    drug_lower = drug_name.lower()
-    
-    # Check direct match
-    if drug_lower in PHARMACOLOGY_KB:
-        return PHARMACOLOGY_KB[drug_lower]
-    
-    # Check partial matches
-    for key, value in PHARMACOLOGY_KB.items():
-        if key in drug_lower or drug_lower in key:
-            return value
-    
-    return None
+    async def _run(self, drug_name: str) -> Optional[Dict]:
+        """
+        Get comprehensive pharmacology information for a drug.
+        """
+        # Simulate network delay
+        await asyncio.sleep(random.uniform(0.2, 0.5))
+        
+        drug_lower = drug_name.lower()
+        
+        # Check direct match
+        if drug_lower in PHARMACOLOGY_KB:
+            return PHARMACOLOGY_KB[drug_lower]
+        
+        # Check partial matches
+        for key, value in PHARMACOLOGY_KB.items():
+            if key in drug_lower or drug_lower in key:
+                return value
+        
+        return None
+
+# Singleton instance
+_pharmacology_tool = PharmacologyTool()
 
 
-def get_drug_mechanism(drug_name: str) -> Optional[str]:
-    """
-    Get mechanism of action for a drug.
-    
-    Args:
-        drug_name: Name of the drug
-        
-    Returns:
-        Mechanism of action description or None
-    """
-    pharmacology = get_drug_pharmacology(drug_name)
+async def get_drug_pharmacology(drug_name: str) -> Optional[Dict]:
+    """Wrapper for backward compatibility and easy import."""
+    return await _pharmacology_tool.execute(drug_name)
+
+
+async def get_drug_mechanism(drug_name: str) -> Optional[str]:
+    """Get mechanism of action for a drug."""
+    pharmacology = await get_drug_pharmacology(drug_name)
     if pharmacology:
         return pharmacology.get("mechanism")
     return None
 
 
-def get_pharmacokinetic_info(drug_name: str) -> Optional[Dict]:
-    """
-    Get pharmacokinetic information for a drug.
-    
-    Args:
-        drug_name: Name of the drug
-        
-    Returns:
-        Dictionary with absorption, distribution, metabolism, elimination info
-    """
-    pharmacology = get_drug_pharmacology(drug_name)
+async def get_pharmacokinetic_info(drug_name: str) -> Optional[Dict]:
+    """Get pharmacokinetic information for a drug."""
+    pharmacology = await get_drug_pharmacology(drug_name)
     if pharmacology:
         return pharmacology.get("pharmacokinetics")
     return None
 
 
-def get_pharmacodynamic_info(drug_name: str) -> Optional[Dict]:
-    """
-    Get pharmacodynamic information for a drug.
-    
-    Args:
-        drug_name: Name of the drug
-        
-    Returns:
-        Dictionary with onset, peak, duration info
-    """
-    pharmacology = get_drug_pharmacology(drug_name)
+async def get_pharmacodynamic_info(drug_name: str) -> Optional[Dict]:
+    """Get pharmacodynamic information for a drug."""
+    pharmacology = await get_drug_pharmacology(drug_name)
     if pharmacology:
         return pharmacology.get("pharmacodynamics")
     return None
 
 
-def check_pharmacological_interaction(drug1: str, drug2: str) -> Optional[Dict]:
-    """
-    Check for pharmacological interaction between two drugs based on mechanisms.
-    
-    Args:
-        drug1: First drug name
-        drug2: Second drug name
-        
-    Returns:
-        Dictionary with interaction mechanism and risk level, or None if no interaction
-    """
-    pharm1 = get_drug_pharmacology(drug1)
-    pharm2 = get_drug_pharmacology(drug2)
+async def check_pharmacological_interaction(drug1: str, drug2: str) -> Optional[Dict]:
+    """Check for pharmacological interaction between two drugs based on mechanisms."""
+    pharm1 = await get_drug_pharmacology(drug1)
+    pharm2 = await get_drug_pharmacology(drug2)
     
     if not pharm1 or not pharm2:
         return None
@@ -295,33 +271,17 @@ def check_pharmacological_interaction(drug1: str, drug2: str) -> Optional[Dict]:
     return None
 
 
-def get_adverse_effects(drug_name: str) -> List[str]:
-    """
-    Get list of adverse effects for a drug.
-    
-    Args:
-        drug_name: Name of the drug
-        
-    Returns:
-        List of adverse effects
-    """
-    pharmacology = get_drug_pharmacology(drug_name)
+async def get_adverse_effects(drug_name: str) -> List[str]:
+    """Get list of adverse effects for a drug."""
+    pharmacology = await get_drug_pharmacology(drug_name)
     if pharmacology:
         return pharmacology.get("adverse_effects", [])
     return []
 
 
-def check_clearance_pathway(drug_name: str) -> Optional[str]:
-    """
-    Check primary clearance pathway for a drug (renal vs hepatic).
-    
-    Args:
-        drug_name: Name of the drug
-        
-    Returns:
-        "renal", "hepatic", or None
-    """
-    pk_info = get_pharmacokinetic_info(drug_name)
+async def check_clearance_pathway(drug_name: str) -> Optional[str]:
+    """Check primary clearance pathway for a drug (renal vs hepatic)."""
+    pk_info = await get_pharmacokinetic_info(drug_name)
     if pk_info:
         elimination = pk_info.get("elimination", "").lower()
         clearance = pk_info.get("clearance", "").lower()
@@ -332,4 +292,3 @@ def check_clearance_pathway(drug_name: str) -> Optional[str]:
             return "hepatic"
     
     return None
-

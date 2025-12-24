@@ -13,6 +13,7 @@ The agent uses a ReAct-style reasoning loop:
 4. Think: Decide if more information is needed or synthesize diagnosis
 """
 import json
+import asyncio
 from typing import Dict, List, Callable, Optional, Any
 from tools import ehr, labs, meds, imaging, ddi, guidelines
 from llm.med_gemma_wrapper import MedGemmaLLM
@@ -237,7 +238,7 @@ Your decision:"""
         
         return "\n".join(summary) if summary else "No data collected yet."
     
-    def _execute_tool(self, tool_name: str, params: Dict, emit: Callable[[str], None]) -> Any:
+    async def _execute_tool(self, tool_name: str, params: Dict, emit: Callable[[str], None]) -> Any:
         """
         Execute a tool and return its result.
         
@@ -260,17 +261,17 @@ Your decision:"""
             
             # Call tool with appropriate parameters
             if tool_name == 'get_ehr':
-                result = tool_func(params['patient_id'])
+                result = await tool_func(params['patient_id'])
             elif tool_name == 'get_labs':
-                result = tool_func(params['patient_id'])
+                result = await tool_func(params['patient_id'])
             elif tool_name == 'get_meds':
-                result = tool_func(params['patient_id'])
+                result = await tool_func(params['patient_id'])
             elif tool_name == 'get_imaging':
-                result = tool_func(params['patient_id'])
+                result = await tool_func(params['patient_id'])
             elif tool_name == 'query_ddi':
-                result = tool_func(params['medications'])
+                result = await tool_func(params['medications'])
             elif tool_name == 'search_guidelines':
-                result = tool_func(params['keyword'])
+                result = await tool_func(params['keyword'])
             else:
                 raise ValueError(f"Tool {tool_name} not implemented")
             
@@ -319,7 +320,7 @@ Your decision:"""
             # All other tools need patient_id
             return {'patient_id': patient_id}
     
-    def run(self, patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
+    async def run(self, patient_id: str, complaint: str, emit: Callable[[str], None]) -> tuple:
         """
         Main execution loop - ReAct pattern: Think → Act → Observe → Think
         
@@ -357,6 +358,10 @@ Your decision:"""
                 break
             
             # ACT: Execute selected tools
+            # We can run these in parallel using asyncio.gather
+            tasks = []
+            task_tool_names = []
+            
             for tool_name in tools_to_call:
                 if tool_name in self.tools_called:
                     emit(f"SKIPPING: {tool_name} (already called)")
@@ -366,10 +371,20 @@ Your decision:"""
                     # Prepare parameters
                     params = self._prepare_tool_params(tool_name, patient_id, self.observations)
                     
-                    # Execute tool
-                    result = self._execute_tool(tool_name, params, emit)
+                    # Add to tasks
+                    tasks.append(self._execute_tool(tool_name, params, emit))
+                    task_tool_names.append(tool_name)
                     
-                    # OBSERVE: Store results
+                except Exception as e:
+                    emit(f"ERROR: Failed to prepare {tool_name}: {str(e)}")
+                    continue
+            
+            if tasks:
+                results = await asyncio.gather(*tasks)
+                
+                # OBSERVE: Store results
+                for i, result in enumerate(results):
+                    tool_name = task_tool_names[i]
                     # Map tool names to observation keys
                     observation_key = {
                         'get_ehr': 'EHR',
@@ -382,10 +397,6 @@ Your decision:"""
                     
                     self.observations[observation_key] = result
                     self.tools_called.append(tool_name)
-                    
-                except Exception as e:
-                    emit(f"ERROR: Failed to execute {tool_name}: {str(e)}")
-                    continue
             
             emit(f"ITERATION_{iteration}_COMPLETED")
         
@@ -416,4 +427,3 @@ Your decision:"""
             emit(f"SYNTHESIS_ERROR: {str(e)}")
             error_summary = f"❌ Error during synthesis: {str(e)}\n\nObservations collected:\n{json.dumps(self.observations, indent=2)}"
             return error_summary, self.observations
-
